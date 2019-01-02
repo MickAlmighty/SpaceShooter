@@ -117,6 +117,9 @@ glm::vec3 lightPosition;
 glm::vec3 spotLightPosition;
 glm::vec3 spotLightPosition1;
 
+float horizontalDirection = 0.0f;
+float verticalDirection = 0.0f;
+float spaceshipSpeed = 0.3f;
 int main()
 {
 	// glfw: initialize and configure
@@ -192,101 +195,84 @@ int main()
 	srand(static_cast <unsigned> (time(0)));
 	// build and compile our shader zprogram
 	// ------------------------------------
-	Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shaderPBR.frag");
+	Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shaderPBR.frag");
 	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.fs");
 	
 	//Poni¿ej shadery z obliczeniami w vertex shaderze
 	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\PBRshader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\PBRshader.frag");
 	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\gouraud.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\gouraud.frag");
 
-	Shader* ourShader2 = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader2.fs");
-	Shader* skyBoxShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\skybox.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\skybox.frag");
-	Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shaderPBR.frag");
+	Shader* ourShader2 = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shader2.fs");
+	Shader* skyBoxShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\skybox.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\skybox.frag");
+	Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shaderPBR.frag");
 	
 	//Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.fs");
 	
 	//Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\gouraud.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.fs");
 	bool PBR = true;
 
-	Model* ourModel = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\nanosuit\\nanosuit.obj");
-	Model* ourModel2 = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\chair\\Armchair Quinti Amelie.3ds");
-	Model* nanosuit = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\nanosuit\\nanosuit.obj");
-	Model* lightBox = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\lightBox\\LightBox.fbx");
-	Model* latarka = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\lightBox\\LightBox.fbx");
-	Model* latarka2 = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\lightBox\\LightBox.fbx");
-	Model* grass = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\rockwall\\Rockwall.fbx");
-	Model* rock = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\rock\\rock.obj");
+	Model* lightBox = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\lightBox\\LightBox.fbx");
+	Model* latarka = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\lightBox\\LightBox.fbx");
+	Model* latarka2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\lightBox\\LightBox.fbx");
 
-	ourModel->SetShader(ourShader);
-	ourModel2->SetShader(ourShader);
-	nanosuit->SetShader(ourShader);
+	Model* rock = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\rock\\rock.obj");
+
+	Model* spaceShip = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj");
+	
 	lightBox->SetShader(ourShader2);
 	latarka->SetShader(ourShader2);
-	grass->SetShader(ourShader);
 	latarka2->SetShader(ourShader2);
 	rock->SetShader(instantiateShader);
+	spaceShip->SetShader(ourShader);
+
 	GraphNode root(true);
 	GraphNode* lightB = new GraphNode(true, lightBox);
 	GraphNode* spotLight = new GraphNode(true, latarka);
-	GraphNode* sun = new GraphNode(true, ourModel);
-	GraphNode* sun2 = new GraphNode(true, nanosuit);
-	GraphNode* floor = new GraphNode(true, grass);
 	GraphNode* pointLightPivot = new GraphNode(true, new Model());
 	GraphNode* spotLight2 = new GraphNode(true, latarka2);
-
-	root.AddChild(sun);
-	root.AddChild(sun2);
+	GraphNode* ship = new GraphNode(true, spaceShip);
 	root.AddChild(pointLightPivot);
 	pointLightPivot->AddChild(lightB);
 	lightB->Translate(glm::vec3(-10.0f, 1, 0));
-
+	root.AddChild(ship);
 
 	root.AddChild(spotLight);
 	root.AddChild(spotLight2);
-	root.AddChild(floor);
 
-	
-	sun->Translate(glm::vec3(0.0f, -1.75f, 0.0f));
-	sun->Scale(glm::vec3(0.1f, 0.1f, 0.1f));
-
-	//moon->Translate(glm::vec3(15, 0, 0));
-	sun2->Scale(glm::vec3(0.15, 0.15, 0.15));
-	sun2->Translate(glm::vec3(-12, -15, -3));
-	sun2->Rotate(30, glm::vec3(0, 1, 0));
-	floor->Translate(glm::vec3(0, -2, 0));
-	floor->Scale(glm::vec3(0.01f, 0.01f, 0.01f));
-	
+	ship->setPosition(0, 0, 0);
+	ship->Scale(glm::vec3(0.01f, 0.01f, 0.01f));
+	ship->Rotate(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 	//skaly
-	unsigned int amount = 1000;
-	glm::mat4* modelMatrices;
-	modelMatrices = new glm::mat4[amount];
-	srand((unsigned int)glfwGetTime()); // initialize random seed	
-	float radius = 5.0;
-	float offset = 1.25f;
-	for (unsigned int i = 0; i < amount; i++)
-	{
-		glm::mat4 model(1);
-		// 1. translation: displace along circle with 'radius' in range [-offset, offset]
-		float angle = (float)i / (float)amount * 360.0f;
-		float displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
-		float x = sin(angle) * radius + displacement;
-		displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
-		float y = displacement * 0.4f; // keep height of asteroid field smaller compared to width of x and z
-		displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
-		float z = cos(angle) * radius + displacement;
-		model = glm::translate(model, glm::vec3(x, y, z));
+	//unsigned int amount = 1000;
+	//glm::mat4* modelMatrices;
+	//modelMatrices = new glm::mat4[amount];
+	//srand((unsigned int)glfwGetTime()); // initialize random seed	
+	//float radius = 5.0;
+	//float offset = 1.25f;
+	//for (unsigned int i = 0; i < amount; i++)
+	//{
+	//	glm::mat4 model(1);
+	//	// 1. translation: displace along circle with 'radius' in range [-offset, offset]
+	//	float angle = (float)i / (float)amount * 360.0f;
+	//	float displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+	//	float x = sin(angle) * radius + displacement;
+	//	displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+	//	float y = displacement * 0.4f; // keep height of asteroid field smaller compared to width of x and z
+	//	displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+	//	float z = cos(angle) * radius + displacement;
+	//	model = glm::translate(model, glm::vec3(x, y, z));
 
-		// 2. scale: Scale between 0.05 and 0.25f
-		float scale = (rand() % 20) / 100.0f + 0.05f;
-		model = glm::scale(model, glm::vec3(scale));
+	//	// 2. scale: Scale between 0.05 and 0.25f
+	//	float scale = (rand() % 20) / 100.0f + 0.05f;
+	//	model = glm::scale(model, glm::vec3(scale));
 
-		// 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
-		float rotAngle = (float)(rand() % 360);
-		model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
+	//	// 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
+	//	float rotAngle = (float)(rand() % 360);
+	//	model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
 
-		// 4. now add to list of matrices
-		modelMatrices[i] = model;
-	}
+	//	// 4. now add to list of matrices
+	//	modelMatrices[i] = model;
+	//}
 	/*for (int i = 0; i < amount; i++) {
 		for(int j = 0; j < 4; j++)
 			for (int k = 0; k < 4; k++) {
@@ -296,36 +282,36 @@ int main()
 	}*/
 	// configure instanced array
 	// -------------------------
-	unsigned int buffer;
+	/*unsigned int buffer;
 	glGenBuffers(1, &buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);*/
 
 	// set transformation matrices as an instance vertex attribute (with divisor 1)
 	// note: we're cheating a little by taking the, now publicly declared, VAO of the model's mesh(es) and adding new vertexAttribPointers
 	// normally you'd want to do this in a more organized fashion, but for learning purposes this will do.
 	// -----------------------------------------------------------------------------------------------------------------------------------
-	for (unsigned int i = 0; i < rock->meshes.size(); i++)
-	{
-		unsigned int VAO = rock->meshes[i]->VAO;
-		glBindVertexArray(VAO);
-		// set attribute pointers for matrix (4 times vec4)
-		glEnableVertexAttribArray(3);
-		glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
-		glEnableVertexAttribArray(4);
-		glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
-		glEnableVertexAttribArray(5);
-		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
-		glEnableVertexAttribArray(6);
-		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+	//for (unsigned int i = 0; i < rock->meshes.size(); i++)
+	//{
+	//	unsigned int VAO = rock->meshes[i]->VAO;
+	//	glBindVertexArray(VAO);
+	//	// set attribute pointers for matrix (4 times vec4)
+	//	glEnableVertexAttribArray(3);
+	//	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+	//	glEnableVertexAttribArray(4);
+	//	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+	//	glEnableVertexAttribArray(5);
+	//	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+	//	glEnableVertexAttribArray(6);
+	//	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
 
-		glVertexAttribDivisor(3, 1);
-		glVertexAttribDivisor(4, 1);
-		glVertexAttribDivisor(5, 1);
-		glVertexAttribDivisor(6, 1);
+	//	glVertexAttribDivisor(3, 1);
+	//	glVertexAttribDivisor(4, 1);
+	//	glVertexAttribDivisor(5, 1);
+	//	glVertexAttribDivisor(6, 1);
 
-		glBindVertexArray(0);
-	}
+	//	glBindVertexArray(0);
+	//}
 
 	glm::mat4 view(1);
 	glm::mat4 projection(1);
@@ -424,7 +410,10 @@ int main()
 		lightB->setPosition(x_axis, y_axis, 0);
 		spotLight->setPosition(slPosX, slPosY, slPosZ);
 		spotLight2->setPosition(slPosX1, slPosY1, slPosZ1);
-		
+		glm::vec3 shipPosition = ship->getPosition();
+		ship->setPosition(shipPosition.x + horizontalDirection, shipPosition.y + verticalDirection, 0.0f);
+		cout << shipPosition.x << " " << shipPosition.y << " " << shipPosition.z << endl;
+
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 
@@ -455,14 +444,14 @@ int main()
 			setPhongShader(instantiateShader);
 		}
 		
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, rock->textures_loaded[0].id); // note: we also made the textures_loaded vector public (instead of private) from the model class.
-		for (unsigned int i = 0; i < rock->meshes.size(); i++)
-		{
-			glBindVertexArray(rock->meshes[i]->VAO);
-			glDrawElementsInstanced(GL_TRIANGLES, rock->meshes[i]->indices.size(), GL_UNSIGNED_INT, 0, amount);
-			glBindVertexArray(0);
-		}
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, rock->textures_loaded[0].id); // note: we also made the textures_loaded vector public (instead of private) from the model class.
+		//for (unsigned int i = 0; i < rock->meshes.size(); i++)
+		//{
+		//	glBindVertexArray(rock->meshes[i]->VAO);
+		//	glDrawElementsInstanced(GL_TRIANGLES, rock->meshes[i]->indices.size(), GL_UNSIGNED_INT, 0, amount);
+		//	glBindVertexArray(0);
+		//}
 
 
 		glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
@@ -493,17 +482,14 @@ int main()
 	}
 	glDeleteVertexArrays(1, &skyboxVAO);
 	glDeleteBuffers(1, &skyboxVAO);
-	glDeleteBuffers(1, &buffer);
+	//glDeleteBuffers(1, &buffer);
 	delete ourShader;
 	delete ourShader2;
 	delete instantiateShader;
 	delete skyBoxShader;
 	root.~GraphNode();
-	// optional: de-allocate all resources once they've outlived their purpose:
-	// ------------------------------------------------------------------------
+	
 
-	// glfw: terminate, clearing all previously allocated GLFW resources.
-	// ------------------------------------------------------------------
 	ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -529,6 +515,26 @@ void processInput(GLFWwindow *window)
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(RIGHT, deltaTime);*/
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+		verticalDirection = spaceshipSpeed;
+		horizontalDirection = 0.0f;
+	}	
+	else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+		verticalDirection = -spaceshipSpeed;
+		horizontalDirection = 0.0f;
+	}	
+	else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+		horizontalDirection = -spaceshipSpeed;
+		verticalDirection = 0.0f;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+		horizontalDirection = spaceshipSpeed;
+		verticalDirection = 0.0f;
+	}
+	else {
+		horizontalDirection = 0.0f;
+		verticalDirection = 0.0f;
+	}
 	if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
 		glfwSetCursorPosCallback(window, NULL);
 	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
