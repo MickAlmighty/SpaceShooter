@@ -20,8 +20,6 @@
 #include <map>
 #include <vector>
 #include <Transform.h>
-using namespace std;
-unsigned int TextureFromFile(const char *path, const string &directory, bool gamma = false);
 class Model{
 private:
 	/*  Dane modelu  */
@@ -149,42 +147,8 @@ private:
 		}
 		return textures;
 	}
-public:
-	vector<Mesh*> meshes;
-	vector<Texture> textures_loaded;
-	void SetShader(Shader* s) { shader = s; }
-	/*  Funkcje   */
-	Model(char *path)
-	{
-		isFromFile = true;
-		loadModel(path);
-	}
-	Model() {
-		isFromFile = false;
-	}
-	Model(Mesh* mesh) 
-	{
-		isFromFile = false;
-		meshes.push_back(mesh);
-	}
-	~Model() {
-		for (Mesh* mesh : meshes) {
-			delete mesh;
-		}
-	}
 
-	void Draw(glm::mat4 &model)
-	{
-		for (unsigned int i = 0; i < meshes.size(); i++)
-		{
-			meshes[i]->Draw(shader, model, isFromFile);
-		}
-	}
-
-};
-
-
-	unsigned int TextureFromFile(const char *path, const string &directory, bool gamma)
+	unsigned int TextureFromFile(const char *path, const string &directory, bool gamma = false)
 	{
 		string filename = string(path);
 		filename = directory + '/' + filename;
@@ -224,4 +188,37 @@ public:
 		return textureID;
 	}
 
+public:
+	vector<Mesh*> meshes;
+	vector<Texture> textures_loaded;
+	void SetShader(Shader* s) { shader = s; }
+	/*  Funkcje   */
+	Model(char *path)
+	{
+		isFromFile = true;
+		loadModel(path);
+	}
+	Model() {
+		isFromFile = false;
+	}
+	Model(Mesh* mesh) 
+	{
+		isFromFile = false;
+		meshes.push_back(mesh);
+	}
+	~Model() {
+		for (Mesh* mesh : meshes) {
+			delete mesh;
+		}
+	}
+
+	void Draw(glm::mat4 &model)
+	{
+		for (unsigned int i = 0; i < meshes.size(); i++)
+		{
+			meshes[i]->Draw(shader, model, isFromFile);
+		}
+	}
+	
+};
 #endif

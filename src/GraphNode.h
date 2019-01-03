@@ -1,3 +1,6 @@
+
+#ifndef GRAPHNODE_H
+#define GRAPHNODE_H
 #include <Model.h>
 #include <glm/glm.hpp>
 class GraphNode
@@ -7,38 +10,35 @@ protected:
 	Model* model;
 	glm::mat4 worldTransform;
 	glm::mat4 transform;
-	glm::mat4 transformOnStart;
-	glm::mat4 worldTransformOnStart;
 	std::vector<GraphNode*> children;
 	bool dirty;
-	bool isRotating = true;
-	float dir;
-	float x;
-	float y;
-	float z;
+	bool active;
 public:
-	GraphNode(bool _isRotating = true, Model* m = nullptr)
+	GraphNode(Model* m = nullptr)
 	{
-		isRotating = _isRotating;
 		this->model = m;
 		parent = NULL;
 		transform = glm::mat4(1);
 		worldTransform = glm::mat4(1);
-		worldTransformOnStart = glm::mat4(1);
-		transformOnStart = glm::mat4(1);
 		dirty = true;
-		const float MIN_RAND = -2.0, MAX_RAND = 2.0;
-		const float range = MAX_RAND - MIN_RAND;
-		dir = range * ((((float)rand()) / (float)RAND_MAX)) + MIN_RAND;
-		x = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-		y = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-		z = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		active = true;
 	}
+
+	GraphNode(GraphNode* graphNode)
+	{
+		this->model = graphNode->model;
+		this->parent = graphNode->parent;
+		this->transform = graphNode->transform;
+		this->worldTransform = graphNode->worldTransform;
+		this->dirty = graphNode->dirty;
+		this->active = true;
+	}
+
 	~GraphNode(void) 
 	{
 		for (unsigned int i = 0; i < children.size(); ++i) {
 			if (model) delete model;
-			delete children[i];
+			//delete children[i];
 		}
 	}
 
@@ -47,9 +47,19 @@ public:
 		children.push_back(node);
 		node->parent = this;
 	}
+
+	void RemoveNode(GraphNode* node)
+	{
+		std::vector<GraphNode*>::iterator i = std::find_if(children.begin(), children.end(), 
+			[&node](const GraphNode& x) //lambda
+		{ 
+			return x.transform[3][0] == node->getPosition().x && x.transform[3][1] == node->getPosition().y && x.transform[3][2] == node->getPosition().z;
+		});
+		children.erase(i);
+	}
+
 	virtual void Update(float msec) 
 	{	
-		
 		if (parent)
 		{
 			bool dirtySum = parent->dirty | dirty;
@@ -57,42 +67,20 @@ public:
 				worldTransform = parent->worldTransform * transform;
 				dirty = false;
 			}
-			/*std::cout << "Graph Node" << std::endl;
-			for (int i = 0; i < 4; i++) {
-				for (int j = 0; j < 4; j++) {
-					float* tmp = glm::value_ptr(worldTransform[i][j]);
-					std::cout << *tmp << " ";
-				}
-				std::cout << std::endl;
-			}*/
-			/*if (!isRotating)
-			{
-				worldTransformOnStart = parent->worldTransform * transformOnStart;
-			}*/
-			
 		}
 		else //jesli jest rootem
 		{
 				worldTransform = transform;
 		}
-		if (model) // jesli ma mesh
-		{
-			/*if (!isRotating) 
-			{
-				model->setTransform(worldTransformOnStart);
-			}
-			else {
-				model->setTransform(worldTransform);
-			}*/
-		}
 		for (GraphNode* node : children) 
 		{
-			node->Update(msec);
+			if(node) node->Update(msec);
 		}
 	}
+
 	virtual void Draw() 
 	{
-		if (model) { model->Draw(worldTransform); }
+		if (model && active) { model->Draw(worldTransform); }
 
 		for (GraphNode* node : children)
 		{
@@ -120,10 +108,11 @@ public:
 
 	glm::vec3 getPosition() 
 	{
-		glm::vec3 position = glm::vec3(worldTransform[3]);
+		glm::vec3 position = glm::vec3(transform[3]);
 		return position;
 	}
 	
+	void Active(bool state) { active = state; }
 	void SetModel(Model* m) { model = m; }
 
 	glm::mat4 GetTransform() { return transform; }
@@ -131,4 +120,7 @@ public:
 	glm::mat4 GetWorldTransform() { return worldTransform; }
 
 	Model* GetModel() { return model; }
+
 };
+
+#endif // !GRAPHNODE_H

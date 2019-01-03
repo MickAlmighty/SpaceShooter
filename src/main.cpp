@@ -14,6 +14,7 @@
 #include <GraphNode.h>
 #include <Mesh.h>
 #include <Camera.h>
+#include <GameManager.h>
 
 #include <iostream>
 #include <cstdlib>
@@ -120,6 +121,7 @@ glm::vec3 spotLightPosition1;
 float horizontalDirection = 0.0f;
 float verticalDirection = 0.0f;
 float spaceshipSpeed = 0.3f;
+float spacebarPushed = false;
 int main()
 {
 	// glfw: initialize and configure
@@ -214,34 +216,46 @@ int main()
 	Model* lightBox = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\lightBox\\LightBox.fbx");
 	Model* latarka = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\lightBox\\LightBox.fbx");
 	Model* latarka2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\lightBox\\LightBox.fbx");
-
 	Model* rock = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\rock\\rock.obj");
-
 	Model* spaceShip = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj");
-	
+	Model* bullet = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\bullet\\bullet.obj");
+
 	lightBox->SetShader(ourShader2);
 	latarka->SetShader(ourShader2);
 	latarka2->SetShader(ourShader2);
 	rock->SetShader(instantiateShader);
 	spaceShip->SetShader(ourShader);
-
-	GraphNode root(true);
-	GraphNode* lightB = new GraphNode(true, lightBox);
-	GraphNode* spotLight = new GraphNode(true, latarka);
-	GraphNode* pointLightPivot = new GraphNode(true, new Model());
-	GraphNode* spotLight2 = new GraphNode(true, latarka2);
-	GraphNode* ship = new GraphNode(true, spaceShip);
-	root.AddChild(pointLightPivot);
+	bullet->SetShader(ourShader);
+	GraphNode* root = new GraphNode();
+	GraphNode* lightB = new GraphNode(lightBox);
+	GraphNode* spotLight = new GraphNode(latarka);
+	GraphNode* pointLightPivot = new GraphNode();
+	GraphNode* spotLight2 = new GraphNode(latarka2);
+	GraphNode* ship = new GraphNode(spaceShip);
+	GraphNode* laserBullet = new GraphNode(bullet);
+	GraphNode* laserBullet2 = new GraphNode(bullet);
+	shared_ptr<GraphNode> graph(root);
+	root->AddChild(laserBullet);
+	root->AddChild(laserBullet2);
+	root->AddChild(pointLightPivot);
 	pointLightPivot->AddChild(lightB);
 	lightB->Translate(glm::vec3(-10.0f, 1, 0));
-	root.AddChild(ship);
+	root->AddChild(ship);
 
-	root.AddChild(spotLight);
-	root.AddChild(spotLight2);
+	root->AddChild(spotLight);
+	root->AddChild(spotLight2);
 
 	ship->setPosition(0, 0, 0);
-	ship->Scale(glm::vec3(0.01f, 0.01f, 0.01f));
+	ship->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
 	ship->Rotate(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	laserBullet->setPosition(1, 0, 0);
+	laserBullet->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
+	laserBullet2->setPosition(4, 0, 0);
+	laserBullet2->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
+	GameManager gameManager(graph, &horizontalDirection, &verticalDirection);
+	gameManager.setPlayer(ship);
+	gameManager.setBullet(laserBullet);
+
 	//skaly
 	//unsigned int amount = 1000;
 	//glm::mat4* modelMatrices;
@@ -410,9 +424,9 @@ int main()
 		lightB->setPosition(x_axis, y_axis, 0);
 		spotLight->setPosition(slPosX, slPosY, slPosZ);
 		spotLight2->setPosition(slPosX1, slPosY1, slPosZ1);
-		glm::vec3 shipPosition = ship->getPosition();
-		ship->setPosition(shipPosition.x + horizontalDirection, shipPosition.y + verticalDirection, 0.0f);
-		cout << shipPosition.x << " " << shipPosition.y << " " << shipPosition.z << endl;
+		gameManager.spacebarPushed(spacebarPushed);
+		gameManager.GameOps();
+
 
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();
@@ -468,8 +482,8 @@ int main()
 		glDepthFunc(GL_LESS); // set depth function back to default
 		/*cout << camera.Position.x << " " << camera.Position.y<< " "<< camera.Position.z <<endl;
 		cout << camera.Front.x << " " << camera.Front.y << " " << camera.Front.z << endl;*/
-		root.Update(deltaTime * 5);
-		root.Draw();
+		root->Update(deltaTime * 5);
+		root->Draw();
 
 		ImGui::Render();
 
@@ -487,7 +501,7 @@ int main()
 	delete ourShader2;
 	delete instantiateShader;
 	delete skyBoxShader;
-	root.~GraphNode();
+	root->~GraphNode();
 	
 
 	ImGui_ImplOpenGL3_Shutdown();
@@ -514,7 +528,9 @@ void processInput(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyboard(RIGHT, deltaTime);*/
+		camera.ProcessKeyboard(RIGHT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+		glfwSetCursorPosCallback(window, NULL);*/
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 		verticalDirection = spaceshipSpeed;
 		horizontalDirection = 0.0f;
@@ -535,8 +551,10 @@ void processInput(GLFWwindow *window)
 		horizontalDirection = 0.0f;
 		verticalDirection = 0.0f;
 	}
-	if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-		glfwSetCursorPosCallback(window, NULL);
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+		spacebarPushed = true;
+	else
+		spacebarPushed = false;
 	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
 		glfwSetCursorPosCallback(window, mouse_callback);
 	
