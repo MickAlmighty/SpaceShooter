@@ -11,6 +11,17 @@ GameManager::~GameManager()
 {
 }
 
+void GameManager::GameOps()
+{
+	ShootIfPossible();
+	movePlayer();
+	moveBullets();
+	removeBulletsOutsideTheCamera();
+	/*if (bulletList.size() >= 00) {
+		cout << bulletList.size() << endl;
+	}*/
+}
+
 void GameManager::setPlayer(GraphNode* playerPtr)
 {
 	player = shared_ptr<GraphNode>(playerPtr);
@@ -24,7 +35,11 @@ void GameManager::setBullet(GraphNode* bulletPtr)
 void GameManager::movePlayer()
 {
 	glm::vec3 shipPosition = player->getPosition();
-	player->setPosition(shipPosition.x + *horizontalDirection, shipPosition.y + *verticalDirection, 0.0f);
+	float xVal = shipPosition.x + *horizontalDirection;
+	float yVal = shipPosition.y + *verticalDirection;
+	//cout << xVal << " " << yVal << endl;
+	if( xVal >= -19.0f && xVal <= 16.0f && yVal <= 11.0f && yVal >= -12.0f)
+		player->setPosition(xVal, shipPosition.y + *verticalDirection, 0.0f);
 	//cout << shipPosition.x << " " << shipPosition.y << " " << shipPosition.z << endl;
 }
 
@@ -58,27 +73,6 @@ void GameManager::spacebarPushed(bool pushed)
 	spacebar = pushed;
 }
 
-void GameManager::GameOps()
-{
-	GLfloat currentFrame = (float)glfwGetTime();
-	/*float coolDown = (float)glfwGetTime() + 1.0f;
-	if (playerShot) {
-		coolDown = (float)glfwGetTime() + 5.0f;
-	}*/
-	movePlayer();
-	if (SpacebarIsPushed()) //&& currentFrame >= coolDown)
-	{
-		//cout << "spacebar pushed" << endl;
-		addBullet();
-		playerShot = false;
-	}
-	moveBullets();
-	if (bulletList.size() >= 00) {
-		cout << bulletList.size() << endl;
-	}
-	removeBulletsOutsideTheCamera();
-}
-
 void GameManager::removeBulletsOutsideTheCamera()
 {
 	for (shared_ptr<GraphNode>& b : bulletList) {
@@ -102,6 +96,24 @@ bool GameManager::removeNode(GraphNode* node)
 			bulletList.erase(i);
 			return true;
 		}
+	}
+}
+
+void GameManager::ShootIfPossible()
+{
+	if (playerShot) {
+		cooldown = (float)glfwGetTime() + 0.4f;
+	}
+
+	if (SpacebarIsPushed() && (float)glfwGetTime() >= cooldown)
+	{
+		//cout << "spacebar pushed" << endl;
+		addBullet();
+		playerShot = true;
+	}
+	else
+	{
+		playerShot = false;
 	}
 }
 

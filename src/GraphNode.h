@@ -121,6 +121,8 @@ public:
 
 	Model* GetModel() { return model; }
 
+	bool GetDirtyFlag() { return dirty; }
+
 };
 
 #endif // !GRAPHNODE_H

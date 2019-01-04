@@ -15,9 +15,12 @@ private:
 	vector<shared_ptr<GraphNode>> bulletList;
 	bool spacebar;
 	bool playerShot;
+	float cooldown = 0;
+
 	bool SpacebarIsPushed();
 	void removeBulletsOutsideTheCamera();
 	bool removeNode(GraphNode*);
+	void ShootIfPossible();
 public:
 	GameManager(shared_ptr<GraphNode> graph, float* , float*);
 	~GameManager();

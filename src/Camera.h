@@ -24,7 +24,7 @@ const float ZOOM        =  45.0f;
 
 
 // An abstract camera class that processes input and calculates the corresponding Euler Angles, Vectors and Matrices for use in OpenGL
-class Camera
+class Camera : public GraphNode
 {
 public:
     // Camera Attributes
@@ -42,7 +42,7 @@ public:
     float Zoom;
 
     // Constructor with vectors
-    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH, Model* model = nullptr) : GraphNode(model) ,Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
     {
         Position = position;
         WorldUp = up;
@@ -63,7 +63,7 @@ public:
     // Returns the view matrix calculated using Euler Angles and the LookAt Matrix
     glm::mat4 GetViewMatrix()
     {
-        return glm::lookAt(Position, Position + Front, Up);
+        return glm::lookAt(Position, glm::vec3(0,0,0), Up);
     }
 
     // Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
@@ -127,5 +127,31 @@ private:
         Right = glm::normalize(glm::cross(Front, WorldUp));  // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
         Up    = glm::normalize(glm::cross(Right, Front));
     }
+
+	virtual void Update(float msec)
+	{
+		//cout << "Update w kamerze" << endl;
+		if (parent)
+		{
+			bool dirtySum = parent->GetDirtyFlag() | dirty;
+			if (dirtySum) {
+				worldTransform = parent->GetWorldTransform() * transform;
+				Position.x = worldTransform[3][0];
+				Position.y = worldTransform[3][1];
+				Position.z = worldTransform[3][2];
+				updateCameraVectors();
+				//cout << worldTransform[3][0] << " " << worldTransform[3][1] << " " << worldTransform[3][2]<< endl;
+				dirty = false;
+			}
+		}
+		else //jesli jest rootem
+		{
+			worldTransform = transform;
+		}
+		for (GraphNode* node : children)
+		{
+			if (node) node->Update(msec);
+		}
+	}
 };
 #endif

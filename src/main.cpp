@@ -41,7 +41,7 @@ GLfloat deltaTime = 0.0f; // Czas pomiêdzy obecn¹ i poprzedni¹ klatk¹
 GLfloat lastFrame = 0.0f; // Czas ostatniej ramki
 bool firstMouse = true;
 
-Camera camera(glm::vec3(0.0f, 0.0f, 30.0f));
+Camera* camera = new Camera(glm::vec3(0.0f, 0.0f, 30.0f));
 GLfloat lastX = SCR_WIDTH / 2.0f;
 GLfloat lastY = SCR_HEIGHT / 2.0f;
 
@@ -103,7 +103,7 @@ float skyboxVertices[] = {
 bool isWireframeModeActive = false;
 float x_axis = 1.0f;
 float y_axis = -1.0f;
-float metallines = 0.5f, roughness = 0.1f, ao = 0.2f;
+float metallines = 0.5f, roughness = 0.1f, ao = 0.6f;
 glm::vec3 lightAmbient(0.2f, 0.2f, 0.8f);
 glm::vec3 lightDiffuse(0.5f, 0.5f, 0.5f);
 glm::vec3 lightSpecular(1.0f, 1.0f, 1.0f);
@@ -112,7 +112,7 @@ float slPosX = -1.3f, slPosY = -0.84f, slPosZ = 0.84f;
 float slPosX1 = 1.485f, slPosY1 = -0.89f, slPosZ1 = 1.683f;
 glm::vec3 spotLightDirection(0.5f, 0.02f, -0.34f);
 glm::vec3 spotLightDirection1(-0.89f, -0.792f, -1.683f);
-float reflectionStrength = 0.0f, refraction = 0.0f, dirLightStrenght = 0.05f;
+float reflectionStrength = 0.0f, refraction = 0.0f, dirLightStrenght = 0.7f;
 bool dirLightEnabled = true, spotLightEnabled = true, spotLightEnabled1 = true, pointLightEnabled = true;
 glm::vec3 lightPosition;
 glm::vec3 spotLightPosition;
@@ -233,10 +233,10 @@ int main()
 	GraphNode* spotLight2 = new GraphNode(latarka2);
 	GraphNode* ship = new GraphNode(spaceShip);
 	GraphNode* laserBullet = new GraphNode(bullet);
-	GraphNode* laserBullet2 = new GraphNode(bullet);
+	GraphNode* cam = camera;
 	shared_ptr<GraphNode> graph(root);
+	root->AddChild(cam);
 	root->AddChild(laserBullet);
-	root->AddChild(laserBullet2);
 	root->AddChild(pointLightPivot);
 	pointLightPivot->AddChild(lightB);
 	lightB->Translate(glm::vec3(-10.0f, 1, 0));
@@ -245,13 +245,13 @@ int main()
 	root->AddChild(spotLight);
 	root->AddChild(spotLight2);
 
-	ship->setPosition(0, 0, 0);
+	ship->setPosition(-16, 0, 0);
 	ship->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
 	ship->Rotate(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 	laserBullet->setPosition(1, 0, 0);
 	laserBullet->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
-	laserBullet2->setPosition(4, 0, 0);
-	laserBullet2->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
+	laserBullet->Active(false);
+	cam->setPosition(0.0f, 0.0f, 30.0f);
 	GameManager gameManager(graph, &horizontalDirection, &verticalDirection);
 	gameManager.setPlayer(ship);
 	gameManager.setBullet(laserBullet);
@@ -420,6 +420,7 @@ int main()
 			ImGui::End();
 		}
 
+		root->Rotate(-0.05f, glm::vec3(0.0f, 1.0f, 0.0f));
 		pointLightPivot->Rotate(1, glm::vec3(0.0f, 1.0f, 0.0f));
 		lightB->setPosition(x_axis, y_axis, 0);
 		spotLight->setPosition(slPosX, slPosY, slPosZ);
@@ -428,8 +429,8 @@ int main()
 		gameManager.GameOps();
 
 
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-		glm::mat4 view = camera.GetViewMatrix();
+		glm::mat4 projection = glm::perspective(glm::radians(camera->Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		glm::mat4 view = camera->GetViewMatrix();
 
 		lightPosition = lightB->getPosition();
 		spotLightPosition = spotLight->getPosition();
@@ -470,7 +471,7 @@ int main()
 
 		glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
 		skyBoxShader->use();
-		view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // remove translation from the view matrix
+		view = glm::mat4(glm::mat3(camera->GetViewMatrix())); // remove translation from the view matrix
 		skyBoxShader->setMat4("view", view);
 		skyBoxShader->setMat4("projection", projection);
 		// skybox cube
@@ -581,7 +582,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	camera.ProcessMouseScroll((float)yoffset);
+	camera->ProcessMouseScroll((float)yoffset);
 }
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
@@ -627,7 +628,7 @@ unsigned int loadCubemap(vector<std::string> faces)
 void setPBRShader(Shader *shader) {
 	shader->use();
 	
-	shader->setVec3("camPos", camera.Position);
+	shader->setVec3("camPos", camera->Position);
 
 	shader->setFloat("ao", ao);
 	shader->setFloat("metallic", metallines);
