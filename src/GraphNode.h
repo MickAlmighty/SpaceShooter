@@ -55,7 +55,9 @@ public:
 		{ 
 			return x.transform[3][0] == node->getPosition().x && x.transform[3][1] == node->getPosition().y && x.transform[3][2] == node->getPosition().z;
 		});
-		children.erase(i);
+		
+		if( i != children.end() ) 
+			children.erase(i);
 	}
 
 	virtual void Update(float msec) 

@@ -1,5 +1,7 @@
 #include <GameManager.h>
 #include <GLFW/glfw3.h>
+#include <ctime>
+
 GameManager::GameManager(shared_ptr<GraphNode> graph, float* hDir, float* vDir) {
 	sceneGraph = graph;
 	horizontalDirection = hDir;
@@ -14,9 +16,12 @@ GameManager::~GameManager()
 void GameManager::GameOps()
 {
 	ShootIfPossible();
+	spawnEnemy();
 	movePlayer();
 	moveBullets();
-	removeBulletsOutsideTheCamera();
+	moveEnemy();
+	removeObjectOutsideTheCamera(bulletList);
+	removeObjectOutsideTheCamera(enemyList);
 	/*if (bulletList.size() >= 00) {
 		cout << bulletList.size() << endl;
 	}*/
@@ -32,15 +37,9 @@ void GameManager::setBullet(GraphNode* bulletPtr)
 	bullet = std::make_shared<GraphNode>(*bulletPtr);
 }
 
-void GameManager::movePlayer()
+void GameManager::setEnemyShip(GraphNode* enemy)
 {
-	glm::vec3 shipPosition = player->getPosition();
-	float xVal = shipPosition.x + *horizontalDirection;
-	float yVal = shipPosition.y + *verticalDirection;
-	//cout << xVal << " " << yVal << endl;
-	if( xVal >= -19.0f && xVal <= 16.0f && yVal <= 11.0f && yVal >= -12.0f)
-		player->setPosition(xVal, shipPosition.y + *verticalDirection, 0.0f);
-	//cout << shipPosition.x << " " << shipPosition.y << " " << shipPosition.z << endl;
+	enemyShip = std::make_shared<GraphNode>(*enemy);
 }
 
 void GameManager::addBullet()
@@ -51,21 +50,57 @@ void GameManager::addBullet()
 	glm::vec3 playerPosition = player->getPosition();
 	
 	tmp.get()->setPosition(playerPosition.x, playerPosition.y, playerPosition.z);
-	playerPosition = tmp->getPosition();
 
 	bulletList.push_back(tmp);
 	sceneGraph->AddChild(tmp.get());
 }
 
+void GameManager::spawnEnemy()
+{
+	float time = (float)glfwGetTime();
+	if( time >= cooldown1)
+	{
+		shared_ptr<GraphNode> tmp = std::make_shared<GraphNode>(enemyShip.get());
+		float r3 = -12.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (11.0f - (-12.0f) )));
+		tmp->setPosition(25.0f, r3, 0.0f);
+
+		enemyList.push_back(tmp);
+		sceneGraph->AddChild(tmp.get());
+		float randomNumber = static_cast <float> (rand());
+		enemyCooldown = static_cast <float> (rand()) / static_cast <float> (RAND_MAX) + 1.0f;
+		//cout << enemyCooldown << endl;
+		cooldown1 = (float)glfwGetTime() + enemyCooldown;
+	}
+	
+}
+
+void GameManager::movePlayer()
+{
+	glm::vec3 shipPosition = player->getPosition();
+	float xVal = shipPosition.x + *horizontalDirection;
+	float yVal = shipPosition.y + *verticalDirection;
+	//cout << xVal << " " << yVal << endl;
+	if (xVal >= -19.0f && xVal <= 16.0f && yVal <= 11.0f && yVal >= -12.0f)
+		player->setPosition(xVal, shipPosition.y + *verticalDirection, 0.0f);
+	//cout << shipPosition.x << " " << shipPosition.y << " " << shipPosition.z << endl;
+}
+
 void GameManager::moveBullets()
 {
-	//glm::vec3 bulletPos;
-	for (shared_ptr<GraphNode>& b : bulletList) {
-		glm::vec3 bulletPos = b->getPosition();
-		b->setPosition(bulletPos.x + bulletSpeed, bulletPos.y, bulletPos.z);
+	for (shared_ptr<GraphNode>& bullet : bulletList) {
+		glm::vec3 bulletPos = bullet->getPosition();
+		bullet->setPosition(bulletPos.x + bulletSpeed, bulletPos.y, bulletPos.z);
 		//cout << bulletPos.x + bulletSpeed << " " << bulletPos.y << " " << bulletPos.z << endl;
 	}
-	//cout << "za petla przesuwania pociskow" << endl;
+}
+
+void GameManager::moveEnemy()
+{
+	for (shared_ptr<GraphNode>& enemy : enemyList)
+	{
+		glm::vec3 enemyPos = enemy->getPosition();
+		enemy->setPosition(enemyPos.x - enemySpeed, enemyPos.y, enemyPos.z);
+	}
 }
 
 void GameManager::spacebarPushed(bool pushed)
@@ -73,13 +108,15 @@ void GameManager::spacebarPushed(bool pushed)
 	spacebar = pushed;
 }
 
-void GameManager::removeBulletsOutsideTheCamera()
+void GameManager::removeObjectOutsideTheCamera(vector<shared_ptr<GraphNode>>& v)
 {
-	for (shared_ptr<GraphNode>& b : bulletList) {
-		glm::vec3 xPos = b->getPosition();
+	for (shared_ptr<GraphNode>& object : v) 
+	{
+		glm::vec3 xPos = object->getPosition();
+		
 		if (xPos.x < -30.0f || xPos.x > 30.0f) {
-			sceneGraph->RemoveNode(b.get());
-			if (removeNode(b.get())) {
+			sceneGraph->RemoveNode(object.get());
+			if (removeNode(object.get())) {
 				break;
 			}
 		}
@@ -97,6 +134,7 @@ bool GameManager::removeNode(GraphNode* node)
 			return true;
 		}
 	}
+	return false;
 }
 
 void GameManager::ShootIfPossible()

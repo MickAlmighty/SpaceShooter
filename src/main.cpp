@@ -219,12 +219,14 @@ int main()
 	Model* rock = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\rock\\rock.obj");
 	Model* spaceShip = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj");
 	Model* bullet = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\bullet\\bullet.obj");
+	Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj");
 
 	lightBox->SetShader(ourShader2);
 	latarka->SetShader(ourShader2);
 	latarka2->SetShader(ourShader2);
 	rock->SetShader(instantiateShader);
 	spaceShip->SetShader(ourShader);
+	spaceShip2->SetShader(ourShader);
 	bullet->SetShader(ourShader);
 	GraphNode* root = new GraphNode();
 	GraphNode* lightB = new GraphNode(lightBox);
@@ -234,6 +236,7 @@ int main()
 	GraphNode* ship = new GraphNode(spaceShip);
 	GraphNode* laserBullet = new GraphNode(bullet);
 	GraphNode* cam = camera;
+	GraphNode* ship2 = new GraphNode(spaceShip2);
 	shared_ptr<GraphNode> graph(root);
 	root->AddChild(cam);
 	root->AddChild(laserBullet);
@@ -241,6 +244,7 @@ int main()
 	pointLightPivot->AddChild(lightB);
 	lightB->Translate(glm::vec3(-10.0f, 1, 0));
 	root->AddChild(ship);
+	root->AddChild(ship2);
 
 	root->AddChild(spotLight);
 	root->AddChild(spotLight2);
@@ -248,6 +252,11 @@ int main()
 	ship->setPosition(-16, 0, 0);
 	ship->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
 	ship->Rotate(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	
+	ship2->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
+	ship2->Rotate(-90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	ship2->Active(false);
+	
 	laserBullet->setPosition(1, 0, 0);
 	laserBullet->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
 	laserBullet->Active(false);
@@ -255,6 +264,7 @@ int main()
 	GameManager gameManager(graph, &horizontalDirection, &verticalDirection);
 	gameManager.setPlayer(ship);
 	gameManager.setBullet(laserBullet);
+	gameManager.setEnemyShip(ship2);
 
 	//skaly
 	//unsigned int amount = 1000;
