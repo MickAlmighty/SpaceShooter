@@ -103,16 +103,16 @@ float skyboxVertices[] = {
 bool isWireframeModeActive = false;
 float x_axis = 1.0f;
 float y_axis = -1.0f;
-float metallines = 0.5f, roughness = 0.1f, ao = 0.6f;
+float metallines = 1.0f, roughness = 0.35f, ao = 0.65f;
 glm::vec3 lightAmbient(0.2f, 0.2f, 0.8f);
-glm::vec3 lightDiffuse(0.5f, 0.5f, 0.5f);
+glm::vec3 lightDiffuse(0.3f, 0.2f, 0.8f);
 glm::vec3 lightSpecular(1.0f, 1.0f, 1.0f);
-glm::vec3 lightDirection(0.0f, 1.0f, 0.0f);
+glm::vec3 lightDirection(0.215f, 0.361f, -1.0f);
 float slPosX = -1.3f, slPosY = -0.84f, slPosZ = 0.84f;
 float slPosX1 = 1.485f, slPosY1 = -0.89f, slPosZ1 = 1.683f;
 glm::vec3 spotLightDirection(0.5f, 0.02f, -0.34f);
 glm::vec3 spotLightDirection1(-0.89f, -0.792f, -1.683f);
-float reflectionStrength = 0.0f, refraction = 0.0f, dirLightStrenght = 0.7f;
+float reflectionStrength = 0.0f, refraction = 0.0f, dirLightStrenght = 1.0f;
 bool dirLightEnabled = true, spotLightEnabled = true, spotLightEnabled1 = true, pointLightEnabled = true;
 glm::vec3 lightPosition;
 glm::vec3 spotLightPosition;
@@ -120,7 +120,7 @@ glm::vec3 spotLightPosition1;
 
 float horizontalDirection = 0.0f;
 float verticalDirection = 0.0f;
-float spaceshipSpeed = 0.3f;
+float spaceshipSpeed = 0.2f;
 float spacebarPushed = false;
 int main()
 {
@@ -219,6 +219,7 @@ int main()
 	Model* rock = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\rock\\rock.obj");
 	Model* spaceShip = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj");
 	Model* bullet = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\bullet\\bullet.obj");
+	//Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\x-wing\\ship.obj");
 	Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj");
 
 	lightBox->SetShader(ourShader2);
@@ -229,20 +230,22 @@ int main()
 	spaceShip2->SetShader(ourShader);
 	bullet->SetShader(ourShader);
 	GraphNode* root = new GraphNode();
+	GraphNode* gameRoot = new GraphNode();
 	GraphNode* lightB = new GraphNode(lightBox);
 	GraphNode* spotLight = new GraphNode(latarka);
 	GraphNode* pointLightPivot = new GraphNode();
 	GraphNode* spotLight2 = new GraphNode(latarka2);
-	GraphNode* ship = new GraphNode(spaceShip);
-	GraphNode* laserBullet = new GraphNode(bullet);
+	GraphNode* ship = new GraphNode(spaceShip, glm::vec3(1.5, 1.5, 0));
+	GraphNode* laserBullet = new GraphNode(bullet,glm::vec3(0.3, 0.4, 0));
 	GraphNode* cam = camera;
-	GraphNode* ship2 = new GraphNode(spaceShip2);
-	shared_ptr<GraphNode> graph(root);
+	GraphNode* ship2 = new GraphNode(spaceShip2, glm::vec3(1.5, 1.5, 0));
+	shared_ptr<GraphNode> graph(gameRoot);
 	root->AddChild(cam);
+	root->AddChild(gameRoot);
 	root->AddChild(laserBullet);
 	root->AddChild(pointLightPivot);
 	pointLightPivot->AddChild(lightB);
-	lightB->Translate(glm::vec3(-10.0f, 1, 0));
+	lightB->setPosition(0.0f, 0.0f, 10.0f);
 	root->AddChild(ship);
 	root->AddChild(ship2);
 
@@ -252,12 +255,15 @@ int main()
 	ship->setPosition(-16, 0, 0);
 	ship->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
 	ship->Rotate(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	
+	ship->Rotate(75.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+
+	ship2->setPosition(0, 0, 0);
 	ship2->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
 	ship2->Rotate(-90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	ship2->Rotate(-75.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 	ship2->Active(false);
 	
-	laserBullet->setPosition(1, 0, 0);
+	laserBullet->setPosition(0, 0, 0);
 	laserBullet->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
 	laserBullet->Active(false);
 	cam->setPosition(0.0f, 0.0f, 30.0f);
@@ -431,8 +437,8 @@ int main()
 		}
 
 		root->Rotate(-0.05f, glm::vec3(0.0f, 1.0f, 0.0f));
-		pointLightPivot->Rotate(1, glm::vec3(0.0f, 1.0f, 0.0f));
-		lightB->setPosition(x_axis, y_axis, 0);
+		//pointLightPivot->Rotate(1, glm::vec3(0.0f, 1.0f, 0.0f));
+		lightB->setPosition(x_axis, y_axis, 30.0f);
 		spotLight->setPosition(slPosX, slPosY, slPosZ);
 		spotLight2->setPosition(slPosX1, slPosY1, slPosZ1);
 		gameManager.spacebarPushed(spacebarPushed);

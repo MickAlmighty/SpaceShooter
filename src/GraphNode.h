@@ -10,16 +10,24 @@ protected:
 	Model* model;
 	glm::mat4 worldTransform;
 	glm::mat4 transform;
+	
 	std::vector<GraphNode*> children;
+	
 	bool dirty;
 	bool active;
+
+	glm::vec3 colliderSize = glm::vec3(1.0f, 1.0f, 0);
+	glm::vec3 direction;
+	float shootingCooldown;
+	GraphNode* shootingObject;
 public:
-	GraphNode(Model* m = nullptr)
+	GraphNode(Model* m = nullptr, glm::vec3 cSize = glm::vec3(0))
 	{
 		this->model = m;
 		parent = NULL;
 		transform = glm::mat4(1);
 		worldTransform = glm::mat4(1);
+		colliderSize = cSize;
 		dirty = true;
 		active = true;
 	}
@@ -31,6 +39,7 @@ public:
 		this->transform = graphNode->transform;
 		this->worldTransform = graphNode->worldTransform;
 		this->dirty = graphNode->dirty;
+		this->colliderSize = graphNode->colliderSize;
 		this->active = true;
 	}
 
@@ -51,9 +60,9 @@ public:
 	void RemoveNode(GraphNode* node)
 	{
 		std::vector<GraphNode*>::iterator i = std::find_if(children.begin(), children.end(), 
-			[&node](const GraphNode& x) //lambda
+			[&node](GraphNode* x) //lambda
 		{ 
-			return x.transform[3][0] == node->getPosition().x && x.transform[3][1] == node->getPosition().y && x.transform[3][2] == node->getPosition().z;
+			return x == node;
 		});
 		
 		if( i != children.end() ) 
@@ -64,11 +73,11 @@ public:
 	{	
 		if (parent)
 		{
-			bool dirtySum = parent->dirty | dirty;
-			if (dirtySum) {
+			//bool dirtySum = parent->dirty | dirty;
+			//if (dirtySum) {
 				worldTransform = parent->worldTransform * transform;
 				dirty = false;
-			}
+			//}
 		}
 		else //jesli jest rootem
 		{
@@ -125,6 +134,20 @@ public:
 
 	bool GetDirtyFlag() { return dirty; }
 
+	glm::vec3 GetColliderSize() { return colliderSize; }
+
+	vector<GraphNode*>& GetChildren() { return children; }
+
+	bool IsActive() { return active; }
+
+	glm::vec3 GetDirection() { return direction; }
+	void SetDirection(glm::vec3 dir) { direction = glm::normalize(dir); }
+
+	float GetShootingCooldown() { return shootingCooldown; }
+	void SetShootingCooldown(float val) { shootingCooldown = val; }
+
+	GraphNode* GetShootingObject() { return shootingObject; }
+	void SetShootingObject(GraphNode* node) { shootingObject = node; }
 };
 
 #endif // !GRAPHNODE_H

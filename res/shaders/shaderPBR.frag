@@ -140,7 +140,7 @@ vec3 calculatePointLight(vec3 albedo, vec3 N, vec3 V)
         vec3 L = normalize(pointLight.position - FragPos);
         vec3 H = normalize(V + L);
         float distance    = length(pointLight.position - FragPos);
-        float attenuation = 1.0 / (distance * distance);
+        float attenuation = 1.0 / 0.05;//(distance * distance);
         vec3 radiance     = pointLight.color * attenuation;        
 
         // cook-torrance brdf
