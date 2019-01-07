@@ -9,10 +9,15 @@ GameManager::GameManager(shared_ptr<GraphNode> graph, float* hDir, float* vDir) 
 	horizontalDirection = hDir;
 	verticalDirection = vDir;
 	spacebar = false;
+	SoundEngine = createIrrKlangDevice();
+	SoundEngine->setSoundVolume(0.008);
+	SoundEngine->play2D("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\sounds\\Space Trip.mp3", GL_TRUE);
+	
 }
 
 GameManager::~GameManager()
 {
+	SoundEngine->drop();
 }
 
 void GameManager::GameOps()
@@ -87,6 +92,7 @@ void GameManager::addBullet(glm::vec3& position, glm::vec3& direction, GraphNode
 	
 	bulletList.push_back(tmp);
 	sceneGraph->AddChild(tmp.get());
+	SoundEngine->play2D("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\sounds\\Blast.mp3", GL_FALSE);
 }
 
 void GameManager::spawnEnemy()
@@ -190,10 +196,8 @@ void GameManager::ShootIfPossible()
 	if (playerShot) {
 		cooldown = (float)glfwGetTime() + 0.4f;
 	}
-	cout << "cooldown = " << cooldown << " czas = " << (float)glfwGetTime() << " spacja "<< SpacebarIsPushed() << endl;
 	if (SpacebarIsPushed() && (float)glfwGetTime() >= cooldown)
 	{
-		cout << "spacebar pushed" << endl;
 		addBullet(player->getPosition(), glm::vec3(1, 0, 0), player.get());
 		playerShot = true;
 	}
@@ -211,6 +215,7 @@ void GameManager::DoCollision()
 			{
 				bullet->Active(false);
 				enemy->Active(false);
+				SoundEngine->play2D("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\sounds\\Explosion.mp3", GL_FALSE);
 				break;
 			}
 				
@@ -220,6 +225,7 @@ void GameManager::DoCollision()
 			bullet->Active(false);
 
 			playerLifes -= 1;
+			SoundEngine->play2D("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\sounds\\Explosion.mp3", GL_FALSE);
 			cout << "Gracz trafiony" << endl;
 			break;
 		}

@@ -83,3 +83,17 @@ target_include_directories("stb_image" PRIVATE "${STB_IMAGE_DIR}")
 
 set(STB_IMAGE_LIBRARY "stb_image")
 set(STB_IMAGE_INCLUDE_DIR "${STB_IMAGE_DIR}")
+
+# irrKlang
+set(IRRKLANG_DIR "${THIRDPARTY_DIR}/irrKlang")
+find_file(IRRKLANG_LIBRARY "${IRRKLANG_DIR}/lib/Win32-visualStudio/irrKlang" PATH_SUFFIXES "*.lib")
+set(IRRKLANG_INCLUDE_DIR "${IRRKLANG_DIR}/include")
+if((NOT IRRKLANG_LIBRARY))# OR (NOT IRRKLANG_INCLUDE_DIR))
+	message("IRRKLANG ERROR!!!!!!!!!!!!!!!!!!!!!!!!" )
+	message("${IRRKLANG_LIBRARY}" )
+endif()
+
+# set(IRRKLANG_DIR "${THIRDPARTY_DIR}/irrKlang-1.6.0")
+# find_library(IRRKLANG_LIBRARY "${IRRKLANG_DIR}/lib/Win32-visualStudio/irrKlang" )
+# set(IRRKLANG_INCLUDE_DIR "${IRRKLANG_DIR/include}")
+#find_path(IRRKLANG_INCLUDE_DIR "${IRRKLANG_DIR}/include")

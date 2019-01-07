@@ -20,6 +20,9 @@
 #include <cstdlib>
 #include <ctime>
 
+
+
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow *window);
@@ -236,7 +239,7 @@ int main()
 	GraphNode* pointLightPivot = new GraphNode();
 	GraphNode* spotLight2 = new GraphNode(latarka2);
 	GraphNode* ship = new GraphNode(spaceShip, glm::vec3(1.5, 1.5, 0));
-	GraphNode* laserBullet = new GraphNode(bullet,glm::vec3(0.3, 0.4, 0));
+	GraphNode* laserBullet = new GraphNode(bullet,glm::vec3(0.2, 0.3, 0));
 	GraphNode* cam = camera;
 	GraphNode* ship2 = new GraphNode(spaceShip2, glm::vec3(1.5, 1.5, 0));
 	shared_ptr<GraphNode> graph(gameRoot);

@@ -1,8 +1,12 @@
+
 #ifndef GAMEMANAGER_H
 #define GAMEMANAGER_H
 #include <vector>
 #include <memory>
 #include <GraphNode.h>
+#include <irrKlang.h>
+using namespace irrklang;
+
 class GameManager
 {
 private:
@@ -21,6 +25,8 @@ private:
 	float enemyCooldown = 1.0f;
 	float enemySpeed = 0.15f;
 	int playerLifes = 3;
+
+	ISoundEngine *SoundEngine;
 
 	bool SpacebarIsPushed();
 	void removeObjectOutsideTheCamera(vector<shared_ptr<GraphNode>>&);
