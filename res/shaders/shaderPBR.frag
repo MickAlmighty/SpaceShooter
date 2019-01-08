@@ -63,10 +63,10 @@ void main()
     vec3 color = vec3(0);
     color += calculatePointLight(albedo, N, V);
     color += calculateDirLight(albedo, N, V);
-    for(int i = 0; i < 2; i++)
-        color += calculateSpotLight(albedo, N, V, spotLight[i]);
-    color += calculateReflection(N, I);
-    color += calculateRefraction(N, I);
+    // for(int i = 0; i < 2; i++)
+    //     color += calculateSpotLight(albedo, N, V, spotLight[i]);
+    // color += calculateReflection(N, I);
+    // color += calculateRefraction(N, I);
     
     //korekcja gamma
     color = color / (color + vec3(1.0));

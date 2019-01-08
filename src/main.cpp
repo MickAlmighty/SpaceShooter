@@ -15,6 +15,7 @@
 #include <Mesh.h>
 #include <Camera.h>
 #include <GameManager.h>
+#include <TextRenderer.h>
 
 #include <iostream>
 #include <cstdlib>
@@ -125,6 +126,7 @@ float horizontalDirection = 0.0f;
 float verticalDirection = 0.0f;
 float spaceshipSpeed = 0.2f;
 float spacebarPushed = false;
+float enterPushed = false;
 int main()
 {
 	// glfw: initialize and configure
@@ -196,11 +198,14 @@ int main()
 	// configure global opengl state
 	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_PROGRAM_POINT_SIZE);
 	glEnable(GL_CULL_FACE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	srand(static_cast <unsigned> (time(0)));
 	// build and compile our shader zprogram
 	// ------------------------------------
-	Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shaderPBR.frag");
+	Shader* ourShader = new Shader("C:/Semestr5/PAG/openGL/scrolling-shooter/res/shaders/shader.vs", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shaderPBR.frag");
 	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.fs");
 	
 	//Poni¿ej shadery z obliczeniami w vertex shaderze
@@ -210,15 +215,10 @@ int main()
 	Shader* ourShader2 = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shader2.fs");
 	Shader* skyBoxShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\skybox.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\skybox.frag");
 	Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shaderPBR.frag");
-	
-	//Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.fs");
-	
-	//Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\gouraud.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.fs");
+	Shader* textShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\text.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\text.frag");
 	bool PBR = true;
 
 	Model* lightBox = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\lightBox\\LightBox.fbx");
-	Model* latarka = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\lightBox\\LightBox.fbx");
-	Model* latarka2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\lightBox\\LightBox.fbx");
 	Model* rock = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\rock\\rock.obj");
 	Model* spaceShip = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj");
 	Model* bullet = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\bullet\\bullet.obj");
@@ -226,8 +226,6 @@ int main()
 	Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj");
 
 	lightBox->SetShader(ourShader2);
-	latarka->SetShader(ourShader2);
-	latarka2->SetShader(ourShader2);
 	rock->SetShader(instantiateShader);
 	spaceShip->SetShader(ourShader);
 	spaceShip2->SetShader(ourShader);
@@ -235,9 +233,7 @@ int main()
 	GraphNode* root = new GraphNode();
 	GraphNode* gameRoot = new GraphNode();
 	GraphNode* lightB = new GraphNode(lightBox);
-	GraphNode* spotLight = new GraphNode(latarka);
 	GraphNode* pointLightPivot = new GraphNode();
-	GraphNode* spotLight2 = new GraphNode(latarka2);
 	GraphNode* ship = new GraphNode(spaceShip, glm::vec3(1.5, 1.5, 0));
 	GraphNode* laserBullet = new GraphNode(bullet,glm::vec3(0.2, 0.3, 0));
 	GraphNode* cam = camera;
@@ -251,9 +247,6 @@ int main()
 	lightB->setPosition(0.0f, 0.0f, 10.0f);
 	root->AddChild(ship);
 	root->AddChild(ship2);
-
-	root->AddChild(spotLight);
-	root->AddChild(spotLight2);
 
 	ship->setPosition(-16, 0, 0);
 	ship->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
@@ -270,11 +263,15 @@ int main()
 	laserBullet->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
 	laserBullet->Active(false);
 	cam->setPosition(0.0f, 0.0f, 30.0f);
+
+	shared_ptr<TextRenderer> textPtr = std::make_shared<TextRenderer>(SCR_WIDTH, SCR_HEIGHT, textShader);
+	textPtr.get()->Load("C:/Semestr5/PAG/openGL/scrolling-shooter/res/fonts/MKStencilsansBlack.ttf", 30);
+	
 	GameManager gameManager(graph, &horizontalDirection, &verticalDirection);
 	gameManager.setPlayer(ship);
 	gameManager.setBullet(laserBullet);
 	gameManager.setEnemyShip(ship2);
-
+	gameManager.SetTextRenderer(textPtr);
 	//skaly
 	//unsigned int amount = 1000;
 	//glm::mat4* modelMatrices;
@@ -361,7 +358,7 @@ int main()
 	skyBoxShader->use();
 	skyBoxShader->setInt("skybox", 0);
 
-	glEnable(GL_PROGRAM_POINT_SIZE);
+	
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
@@ -440,20 +437,13 @@ int main()
 		}
 
 		root->Rotate(-0.05f, glm::vec3(0.0f, 1.0f, 0.0f));
-		//pointLightPivot->Rotate(1, glm::vec3(0.0f, 1.0f, 0.0f));
 		lightB->setPosition(x_axis, y_axis, 30.0f);
-		spotLight->setPosition(slPosX, slPosY, slPosZ);
-		spotLight2->setPosition(slPosX1, slPosY1, slPosZ1);
-		gameManager.spacebarPushed(spacebarPushed);
-		gameManager.GameOps();
-
-
+		
+		
 		glm::mat4 projection = glm::perspective(glm::radians(camera->Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera->GetViewMatrix();
 
 		lightPosition = lightB->getPosition();
-		spotLightPosition = spotLight->getPosition();
-		spotLightPosition1 = spotLight2->getPosition();
 
 		ourShader->use();
 		ourShader->setMat4("view", view);
@@ -468,6 +458,7 @@ int main()
 		instantiateShader->setMat4("view", view);
 		instantiateShader->setMat4("projection", projection);
 		instantiateShader->setInt("texture_diffuse1", 0);
+		
 		
 		if (PBR) {
 			setPBRShader(ourShader);
@@ -486,7 +477,7 @@ int main()
 		//	glDrawElementsInstanced(GL_TRIANGLES, rock->meshes[i]->indices.size(), GL_UNSIGNED_INT, 0, amount);
 		//	glBindVertexArray(0);
 		//}
-
+		
 
 		glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
 		skyBoxShader->use();
@@ -503,12 +494,19 @@ int main()
 		/*cout << camera.Position.x << " " << camera.Position.y<< " "<< camera.Position.z <<endl;
 		cout << camera.Front.x << " " << camera.Front.y << " " << camera.Front.z << endl;*/
 		root->Update(deltaTime * 5);
+		
 		root->Draw();
 
 		ImGui::Render();
-
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+		gameManager.spacebarPushed(spacebarPushed);
+		gameManager.enterPushed(enterPushed);
+		gameManager.GameOps();
+		/*textPtr.get()->RenderText("Lives:", 50.0f, 50.0f, 1.0f);
+		textPtr.get()->RenderText("(C) LearnOpenGL.com", 540.0f, 570.0f, 0.5f, glm::vec3(0.3, 0.7f, 0.9f));*/
+		
+		
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
@@ -550,7 +548,9 @@ void processInput(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(RIGHT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-		glfwSetCursorPosCallback(window, NULL);*/
+		glfwSetCursorPosCallback(window, NULL);
+	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
+		glfwSetCursorPosCallback(window, mouse_callback);*/
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 		verticalDirection = spaceshipSpeed;
 		horizontalDirection = 0.0f;
@@ -571,13 +571,16 @@ void processInput(GLFWwindow *window)
 		horizontalDirection = 0.0f;
 		verticalDirection = 0.0f;
 	}
+	
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
 		spacebarPushed = true;
 	else
 		spacebarPushed = false;
-	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
-		glfwSetCursorPosCallback(window, mouse_callback);
 	
+	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
+		enterPushed = true;
+	else
+		enterPushed = false;
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)

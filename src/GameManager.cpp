@@ -3,6 +3,7 @@
 #include <ctime>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/vector_angle.hpp>
+#include <sstream>
 
 GameManager::GameManager(shared_ptr<GraphNode> graph, float* hDir, float* vDir) {
 	sceneGraph = graph;
@@ -10,7 +11,7 @@ GameManager::GameManager(shared_ptr<GraphNode> graph, float* hDir, float* vDir) 
 	verticalDirection = vDir;
 	spacebar = false;
 	SoundEngine = createIrrKlangDevice();
-	SoundEngine->setSoundVolume(0.008);
+	SoundEngine->setSoundVolume((float)0.008);
 	SoundEngine->play2D("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\sounds\\Space Trip.mp3", GL_TRUE);
 	
 }
@@ -22,7 +23,8 @@ GameManager::~GameManager()
 
 void GameManager::GameOps()
 {
-	if (playerLifes > 0) 
+	stringstream ss;
+	if (gameState == IN_GAME) 
 	{
 		ShootIfPossible();
 		spawnEnemy();
@@ -35,11 +37,26 @@ void GameManager::GameOps()
 		DoCollision();
 		removeObjectOutsideTheCamera(bulletList);
 		removeObjectOutsideTheCamera(enemyList);
+		
+		ss << playerLifes;
+		Text.get()->RenderText("Lives: " + ss.str(), 10.0f, 10.0f, 1.0f);
+		ss.str("");
+		ss << score;
+		Text.get()->RenderText("Score: " + ss.str(), 10.0f, 55.0f, 1.0f);
 	}
-	else {
-		ResetGame();
+	if(gameState == IN_MENU)
+	{
+		Text->RenderText("Press ENTER to start", 500.0f, 360.0f, 1.0f);
+		
+		if (!gameInit)
+		{
+			ss << score;
+			Text.get()->RenderText("Score: " + ss.str(), 590.0f, 400.0f, 1.0f);
+		}
+		if (EnterIsPushed()) {
+			ResetGame();
+		}
 	}
-	
 	if (bulletList.size() >= 00) {
 		//cout << bulletList.size() << endl;
 		//cout << enemyList.size() << endl;
@@ -53,8 +70,11 @@ void GameManager::ResetGame()
 	sceneGraph->GetChildren().clear();
 	enemyList.clear();
 	bulletList.clear();
-	player->setPosition(-19.0f, -0.5f, 0.0f);
+	player->setPosition(-17.0f, -0.5f, 0.0f);
 	playerLifes = 3;
+	score = 0;
+	gameState = IN_GAME;
+	gameInit = false;
 }
 
 void GameManager::setPlayer(GraphNode* playerPtr)
@@ -72,6 +92,10 @@ void GameManager::setEnemyShip(GraphNode* enemy)
 {
 	//enemyShip = std::make_shared<GraphNode>(*enemy);
 	enemyShip = shared_ptr<GraphNode>(enemy);
+}
+
+void GameManager::SetTextRenderer(shared_ptr<TextRenderer>& text) {
+	Text = text;
 }
 
 void GameManager::addBullet(glm::vec3& position, glm::vec3& direction, GraphNode* shootingObject)
@@ -117,10 +141,9 @@ void GameManager::movePlayer()
 	glm::vec3 shipPosition = player->getPosition();
 	float xVal = shipPosition.x + *horizontalDirection;
 	float yVal = shipPosition.y + *verticalDirection;
-	//cout << xVal << " " << yVal << endl;
-	if (xVal >= -19.0f && xVal <= 16.0f && yVal <= 11.0f && yVal >= -12.0f)
+	if (xVal >= -19.0f && xVal <= 16.0f && yVal <= 11.0f && yVal >= -12.0f) {
 		player->setPosition(xVal, shipPosition.y + *verticalDirection, 0.0f);
-	//cout << shipPosition.x << " " << shipPosition.y << " " << shipPosition.z << endl;
+	}
 }
 
 void GameManager::moveBullets()
@@ -129,7 +152,6 @@ void GameManager::moveBullets()
 		glm::vec3 bulletPos = bullet->getPosition();
 		
 		bullet->setPosition(bulletPos.x + bullet->GetDirection().x * bulletSpeed, bulletPos.y + bullet->GetDirection().y * bulletSpeed, bulletPos.z);
-		//cout << bulletPos.x + bulletSpeed << " " << bulletPos.y << " " << bulletPos.z << endl;
 	}
 }
 
@@ -145,6 +167,11 @@ void GameManager::moveEnemy()
 void GameManager::spacebarPushed(bool pushed)
 {
 	spacebar = pushed;
+}
+
+void GameManager::enterPushed(bool pushed)
+{
+	enter = pushed;
 }
 
 void GameManager::removeObjectOutsideTheCamera(vector<shared_ptr<GraphNode>>& v)
@@ -184,7 +211,6 @@ void GameManager::removeNode(vector<shared_ptr<GraphNode>>& v, shared_ptr<GraphN
 	});
 
 	if (i != v.end()) {
-		//cout << "usuwanie shared_ptr" << endl;
 		v.erase(i);
 	}
 		
@@ -216,6 +242,7 @@ void GameManager::DoCollision()
 				bullet->Active(false);
 				enemy->Active(false);
 				SoundEngine->play2D("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\sounds\\Explosion.mp3", GL_FALSE);
+				score += 10;
 				break;
 			}
 				
@@ -227,10 +254,13 @@ void GameManager::DoCollision()
 			playerLifes -= 1;
 			SoundEngine->play2D("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\sounds\\Explosion.mp3", GL_FALSE);
 			cout << "Gracz trafiony" << endl;
+			if (playerLifes == 0)
+				gameState = IN_MENU;
 			break;
 		}
 	}
 }
+
 
 bool GameManager::CheckCollision(GraphNode* one, GraphNode* two)
 {
@@ -253,22 +283,35 @@ void GameManager::EnemyShooting()
 {
 	for (shared_ptr<GraphNode>& enemy : enemyList) {
 		float time = (float)glfwGetTime();
-		if (time >= enemy->GetShootingCooldown() && enemy->IsActive() && enemy->getPosition().x >= player->getPosition().x + 1)
+		if (time >= enemy->GetShootingCooldown() && enemy->IsActive())
 		{
 			enemy->SetShootingCooldown((float)glfwGetTime() + static_cast <float> (rand()) / static_cast <float> (RAND_MAX) + 1.0f);
-						
-			glm::vec3 dir = glm::normalize(player->getPosition() - enemy->getPosition());
+			if( enemy->getPosition().x >= player->getPosition().x + 1)
+			{
+				glm::vec3 dir = glm::normalize(player->getPosition() - enemy->getPosition());
 
-			addBullet(enemy->getPosition(), dir, enemy.get());
+				addBullet(enemy->getPosition(), dir, enemy.get());
+			}
+			else 
+			{
+				addBullet(enemy->getPosition(), glm::vec3(-1.0f, 0.0f, 0.0f), enemy.get());
+			}
+			
 		}
 	}
 }
 
-
-
 bool GameManager::SpacebarIsPushed()
 {
 	if (spacebar)
+		return true;
+	else
+		return false;
+}
+
+bool GameManager::EnterIsPushed()
+{
+	if (enter)
 		return true;
 	else
 		return false;
