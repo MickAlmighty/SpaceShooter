@@ -31,7 +31,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 unsigned int loadCubemap(vector<std::string> faces);
 void setPBRShader(Shader *shader);
 void setPhongShader(Shader *shader);
-
+void renderQuad();
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
@@ -105,22 +105,26 @@ float skyboxVertices[] = {
 };
 
 bool isWireframeModeActive = false;
-float x_axis = 1.0f;
-float y_axis = -1.0f;
-float metallines = 1.0f, roughness = 0.35f, ao = 0.65f;
-glm::vec3 lightAmbient(0.2f, 0.2f, 0.8f);
+float x_axis = 10.0f;
+float y_axis = 10.0f;
+float metallines = 0.2f, roughness = 0.229f, ao = 0.25f;
+glm::vec3 lightAmbient(1.0f, 1.0f, 1.0f);
 glm::vec3 lightDiffuse(0.3f, 0.2f, 0.8f);
 glm::vec3 lightSpecular(1.0f, 1.0f, 1.0f);
-glm::vec3 lightDirection(0.215f, 0.361f, -1.0f);
+glm::vec3 lightDirection(-0.644f, 1.05f, 1.963f);
 float slPosX = -1.3f, slPosY = -0.84f, slPosZ = 0.84f;
 float slPosX1 = 1.485f, slPosY1 = -0.89f, slPosZ1 = 1.683f;
 glm::vec3 spotLightDirection(0.5f, 0.02f, -0.34f);
 glm::vec3 spotLightDirection1(-0.89f, -0.792f, -1.683f);
-float reflectionStrength = 0.0f, refraction = 0.0f, dirLightStrenght = 1.0f;
+float reflectionStrength = 0.0f, refraction = 0.0f, dirLightStrenght = 0.3f;
 bool dirLightEnabled = true, spotLightEnabled = true, spotLightEnabled1 = true, pointLightEnabled = true;
 glm::vec3 lightPosition;
 glm::vec3 spotLightPosition;
 glm::vec3 spotLightPosition1;
+glm::vec3 WorldLightDirection;
+
+glm::mat4 lightSpaceMatrix(1);
+unsigned int depthMap;
 
 float horizontalDirection = 0.0f;
 float verticalDirection = 0.0f;
@@ -135,31 +139,31 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	
-	    // Setup window
-	    glfwSetErrorCallback(glfw_error_callback);
-	    if (!glfwInit())
-	        return 1;
-	
-	    // Decide GL+GLSL versions
-	#if __APPLE__
-	    // GL 3.2 + GLSL 150
-	    const char* glsl_version = "#version 150";
-	    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-	    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-	    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on Mac
-	#else
-	    // GL 4.3 + GLSL 430
-	    const char* glsl_version = "#version 430";
-	    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-	    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
-	#endif
 
-	// glfw window creation
-	// --------------------
+	// Setup window
+	glfwSetErrorCallback(glfw_error_callback);
+	if (!glfwInit())
+		return 1;
+
+	// Decide GL+GLSL versions
+#if __APPLE__
+	// GL 3.2 + GLSL 150
+	const char* glsl_version = "#version 150";
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on Mac
+#else
+	// GL 4.3 + GLSL 430
+	const char* glsl_version = "#version 430";
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
+#endif
+
+// glfw window creation
+// --------------------
 	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
 	if (window == NULL)
 	{
@@ -184,16 +188,16 @@ int main()
 	}
 
 	IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
 
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init(glsl_version);
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init(glsl_version);
 
-    // Setup style
-    ImGui::StyleColorsDark();
+	// Setup style
+	ImGui::StyleColorsDark();
 
 	// configure global opengl state
 	// -----------------------------
@@ -207,15 +211,18 @@ int main()
 	// ------------------------------------
 	Shader* ourShader = new Shader("C:/Semestr5/PAG/openGL/scrolling-shooter/res/shaders/shader.vs", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shaderPBR.frag");
 	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.fs");
-	
+
 	//Poni¿ej shadery z obliczeniami w vertex shaderze
 	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\PBRshader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\PBRshader.frag");
 	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\gouraud.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\gouraud.frag");
 
 	Shader* ourShader2 = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shader2.fs");
 	Shader* skyBoxShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\skybox.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\skybox.frag");
-	Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shaderPBR.frag");
+	//Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shaderPBR.frag");
 	Shader* textShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\text.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\text.frag");
+	shared_ptr<Shader> depthShader = std::make_shared<Shader>("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\depthShader.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\depthShader.frag");
+	shared_ptr<Shader> debugDepthQuad = std::make_shared<Shader>("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\debugDepth.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\debugDepth.frag");
+	
 	bool PBR = true;
 
 	Model* lightBox = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\lightBox\\LightBox.fbx");
@@ -224,55 +231,64 @@ int main()
 	Model* bullet = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\bullet\\bullet.obj");
 	//Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\x-wing\\ship.obj");
 	Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj");
-
+	Model* ast = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\asteroida\\Asteroid.obj");
 	lightBox->SetShader(ourShader2);
-	rock->SetShader(instantiateShader);
+	//rock->SetShader(instantiateShader);
 	spaceShip->SetShader(ourShader);
 	spaceShip2->SetShader(ourShader);
 	bullet->SetShader(ourShader);
+	ast->SetShader(ourShader);
 	GraphNode* root = new GraphNode();
 	GraphNode* gameRoot = new GraphNode();
 	GraphNode* lightB = new GraphNode(lightBox);
 	GraphNode* pointLightPivot = new GraphNode();
-	GraphNode* ship = new GraphNode(spaceShip, glm::vec3(1.5, 1.5, 0));
-	GraphNode* laserBullet = new GraphNode(bullet,glm::vec3(0.2, 0.3, 0));
+	GraphNode* ship = new GraphNode(spaceShip, glm::vec2(-2, -0.5), glm::vec2(0, 0.5));
+	GraphNode* laserBullet = new GraphNode(bullet, glm::vec2(-0.2, -0.1), glm::vec2(0.2, 0.1));
 	GraphNode* cam = camera;
-	GraphNode* ship2 = new GraphNode(spaceShip2, glm::vec3(1.5, 1.5, 0));
+	GraphNode* ship2 = new GraphNode(spaceShip2, glm::vec2(-1, -1), glm::vec2(1, 1));
+	GraphNode* asteroid = new GraphNode(ast);
 	shared_ptr<GraphNode> graph(gameRoot);
 	root->AddChild(cam);
 	root->AddChild(gameRoot);
 	root->AddChild(laserBullet);
 	root->AddChild(pointLightPivot);
 	pointLightPivot->AddChild(lightB);
-	lightB->setPosition(0.0f, 0.0f, 10.0f);
+	lightB->setPosition(0.0f, 0.0f, 1.0f);
 	root->AddChild(ship);
 	root->AddChild(ship2);
+	root->AddChild(asteroid);
 
-	ship->setPosition(-16, 0, 0);
+	ship->setPosition(-17, 0, 0);
 	ship->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
 	ship->Rotate(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 	ship->Rotate(75.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 
-	ship2->setPosition(0, 0, 0);
+	ship2->setPosition(50, 0, 0);
 	ship2->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
 	ship2->Rotate(-90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 	ship2->Rotate(-75.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 	ship2->Active(false);
-	
-	laserBullet->setPosition(0, 0, 0);
-	laserBullet->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
+
+	asteroid->setPosition(0, 0, 0);
+	asteroid->Scale(glm::vec3(0.002f, 0.002f, 0.002f));
+	asteroid->Active(false);
+
+	laserBullet->setPosition(0, 0, -3);
+	//laserBullet->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
 	laserBullet->Active(false);
 	cam->setPosition(0.0f, 0.0f, 30.0f);
 
 	shared_ptr<TextRenderer> textPtr = std::make_shared<TextRenderer>(SCR_WIDTH, SCR_HEIGHT, textShader);
 	textPtr.get()->Load("C:/Semestr5/PAG/openGL/scrolling-shooter/res/fonts/MKStencilsansBlack.ttf", 30);
-	
+
 	GameManager gameManager(graph, &horizontalDirection, &verticalDirection);
 	gameManager.setPlayer(ship);
 	gameManager.setBullet(laserBullet);
 	gameManager.setEnemyShip(ship2);
 	gameManager.SetTextRenderer(textPtr);
-	//skaly
+	gameManager.SetAsteroid(asteroid);
+	//skaly 
+	{
 	//unsigned int amount = 1000;
 	//glm::mat4* modelMatrices;
 	//modelMatrices = new glm::mat4[amount];
@@ -291,7 +307,7 @@ int main()
 	//	displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
 	//	float z = cos(angle) * radius + displacement;
 	//	model = glm::translate(model, glm::vec3(x, y, z));
-
+	
 	//	// 2. scale: Scale between 0.05 and 0.25f
 	//	float scale = (rand() % 20) / 100.0f + 0.05f;
 	//	model = glm::scale(model, glm::vec3(scale));
@@ -342,7 +358,31 @@ int main()
 
 	//	glBindVertexArray(0);
 	//}
+	}
 
+	unsigned int depthMapFBO;
+	glGenFramebuffers(1, &depthMapFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+
+	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+
+	
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+		SHADOW_WIDTH, SHADOW_WIDTH, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		return false;
 	glm::mat4 view(1);
 	glm::mat4 projection(1);
 	
@@ -369,7 +409,7 @@ int main()
 		// input
 		// -----
 		processInput(window);
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
@@ -386,9 +426,9 @@ int main()
 			ImGui::SliderFloat("Reflection", &reflectionStrength, 0.0f, 1.0f);
 			ImGui::SliderFloat("Refraction", &refraction, 0.0f, 4.0f);
 			ImGui::Text("DirLight light direction");
-			ImGui::SliderFloat("x-direction", &lightDirection.x, -1.0f, 1.0f);
-			ImGui::SliderFloat("y-direction", &lightDirection.y, 0.0f, 1.0f);
-			ImGui::SliderFloat("z-direction", &lightDirection.z, -1.0f, 1.0f);
+			ImGui::SliderFloat("x-direction", &lightDirection.x, -10.0f, 10.0f);
+			ImGui::SliderFloat("y-direction", &lightDirection.y, -10.0f, 10.0f);
+			ImGui::SliderFloat("z-direction", &lightDirection.z, -10.0f, 10.0f);
 			ImGui::SliderFloat("dirLightStrenght", &dirLightStrenght, 0.0f, 1.0f);
 			ImGui::Text("Pozycja reflektora_1");
 			ImGui::SliderFloat("pos_x", &slPosX, -10.0f, 10.0f);
@@ -442,41 +482,78 @@ int main()
 		
 		glm::mat4 projection = glm::perspective(glm::radians(camera->Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera->GetViewMatrix();
+		lightPosition = lightB->GetWorldPosition();
+		glm::mat4 DirLightPosition(1);
+		DirLightPosition[3][0] = lightDirection.x;
+		DirLightPosition[3][1] = lightDirection.y;
+		DirLightPosition[3][2] = lightDirection.z;
+		DirLightPosition = graph->GetWorldTransform() * DirLightPosition;
+		WorldLightDirection.x = DirLightPosition[3][0];
+		WorldLightDirection.y = DirLightPosition[3][1];
+		WorldLightDirection.z = DirLightPosition[3][2];
 
-		lightPosition = lightB->getPosition();
+		glm::mat4 lightProjection(1), lightView(1);
+		
+		float near_plane = -20.0f, far_plane = 20.0f;
+		lightProjection = glm::ortho(-30.0f, 30.0f, -30.0f, 30.0f, near_plane, far_plane);
+		lightView = glm::lookAt(WorldLightDirection, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+		lightSpaceMatrix = lightProjection * lightView;
 
+		depthShader->use();
+		depthShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+		glViewport(0, 0, SCR_WIDTH, SCR_WIDTH);
+		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		glCullFace(GL_FRONT);
+		root->SetShader(depthShader.get());
+		root->Draw();
+		glCullFace(GL_BACK);
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		root->SetShader(ourShader);
 		ourShader->use();
 		ourShader->setMat4("view", view);
 		ourShader->setMat4("projection", projection);
+		ourShader->setMat4("LightSpaceMatrix", lightSpaceMatrix);
+		ourShader->setInt("shadowMap", 1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+
+
+		
 
 		ourShader2->use();
 		ourShader2->setMat4("view", view);
 		ourShader2->setMat4("projection", projection);
 		ourShader2->setVec3("lightColor", lightDiffuse);
+		ourShader2->setMat4("LightSpaceMatrix", lightSpaceMatrix);
 
-		instantiateShader->use();
+		/*instantiateShader->use();
 		instantiateShader->setMat4("view", view);
 		instantiateShader->setMat4("projection", projection);
 		instantiateShader->setInt("texture_diffuse1", 0);
-		
+		*/
 		
 		if (PBR) {
 			setPBRShader(ourShader);
-			setPBRShader(instantiateShader);
+			//setPBRShader(instantiateShader);
 		}
 		else {
 			setPhongShader(ourShader);
-			setPhongShader(instantiateShader);
+			//setPhongShader(instantiateShader);
 		}
-		
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, rock->textures_loaded[0].id); // note: we also made the textures_loaded vector public (instead of private) from the model class.
-		//for (unsigned int i = 0; i < rock->meshes.size(); i++)
-		//{
-		//	glBindVertexArray(rock->meshes[i]->VAO);
-		//	glDrawElementsInstanced(GL_TRIANGLES, rock->meshes[i]->indices.size(), GL_UNSIGNED_INT, 0, amount);
-		//	glBindVertexArray(0);
-		//}
+		root->Draw();
+
+		////glActiveTexture(GL_TEXTURE0);
+		////glBindTexture(GL_TEXTURE_2D, rock->textures_loaded[0].id); // note: we also made the textures_loaded vector public (instead of private) from the model class.
+		////for (unsigned int i = 0; i < rock->meshes.size(); i++)
+		////{
+		////	glBindVertexArray(rock->meshes[i]->VAO);
+		////	glDrawElementsInstanced(GL_TRIANGLES, rock->meshes[i]->indices.size(), GL_UNSIGNED_INT, 0, amount);
+		////	glBindVertexArray(0);
+		////}
 		
 
 		glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
@@ -491,11 +568,15 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 		glDepthFunc(GL_LESS); // set depth function back to default
-		/*cout << camera.Position.x << " " << camera.Position.y<< " "<< camera.Position.z <<endl;
-		cout << camera.Front.x << " " << camera.Front.y << " " << camera.Front.z << endl;*/
-		root->Update(deltaTime * 5);
+
 		
-		root->Draw();
+		/*debugDepthQuad->use();
+		debugDepthQuad->setFloat("near_plane", near_plane);
+		debugDepthQuad->setFloat("far_plane", far_plane);
+		debugDepthQuad->setInt("depthMap", 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		renderQuad();*/
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -503,9 +584,8 @@ int main()
 		gameManager.spacebarPushed(spacebarPushed);
 		gameManager.enterPushed(enterPushed);
 		gameManager.GameOps();
-		/*textPtr.get()->RenderText("Lives:", 50.0f, 50.0f, 1.0f);
-		textPtr.get()->RenderText("(C) LearnOpenGL.com", 540.0f, 570.0f, 0.5f, glm::vec3(0.3, 0.7f, 0.9f));*/
 		
+		root->Update(deltaTime * 5);
 		
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
@@ -517,7 +597,7 @@ int main()
 	//glDeleteBuffers(1, &buffer);
 	delete ourShader;
 	delete ourShader2;
-	delete instantiateShader;
+	//delete instantiateShader;
 	delete skyBoxShader;
 	root->~GraphNode();
 	
@@ -529,6 +609,35 @@ int main()
 
 	
 	return 0;
+}
+
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
+void renderQuad()
+{
+	if (quadVAO == 0)
+	{
+		float quadVertices[] = {
+			// positions        // texture Coords
+			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+		};
+		// setup plane VAO
+		glGenVertexArrays(1, &quadVAO);
+		glGenBuffers(1, &quadVBO);
+		glBindVertexArray(quadVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	}
+	glBindVertexArray(quadVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
 }
 
 
@@ -651,7 +760,7 @@ void setPBRShader(Shader *shader) {
 	shader->use();
 	
 	shader->setVec3("camPos", camera->Position);
-
+	
 	shader->setFloat("ao", ao);
 	shader->setFloat("metallic", metallines);
 	shader->setFloat("roughness", roughness);
@@ -662,7 +771,7 @@ void setPBRShader(Shader *shader) {
 	shader->setVec3("pointLight.position", lightPosition);
 	shader->setBool("pointLight.enabled", pointLightEnabled);
 
-	shader->setVec3("dirLight.direction", lightDirection);
+	shader->setVec3("dirLight.direction", WorldLightDirection);
 	shader->setVec3("dirLight.color", lightAmbient);
 	shader->setFloat("dirLight.lightStrength", dirLightStrenght);
 	shader->setBool("dirLight.enabled", dirLightEnabled);

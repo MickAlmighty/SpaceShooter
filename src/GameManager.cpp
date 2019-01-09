@@ -29,15 +29,17 @@ void GameManager::GameOps()
 		ShootIfPossible();
 		spawnEnemy();
 		EnemyShooting();
+		spawnAsteroid();
 
 		movePlayer();
 		moveBullets();
 		moveEnemy();
+		moveAsteroids();
 
 		DoCollision();
 		removeObjectOutsideTheCamera(bulletList);
 		removeObjectOutsideTheCamera(enemyList);
-		
+		removeAsteroidsOutsideTheCamera(asteroidList);
 		ss << playerLifes;
 		Text.get()->RenderText("Lives: " + ss.str(), 10.0f, 10.0f, 1.0f);
 		ss.str("");
@@ -47,7 +49,6 @@ void GameManager::GameOps()
 	if(gameState == IN_MENU)
 	{
 		Text->RenderText("Press ENTER to start", 500.0f, 360.0f, 1.0f);
-		
 		if (!gameInit)
 		{
 			ss << score;
@@ -70,7 +71,8 @@ void GameManager::ResetGame()
 	sceneGraph->GetChildren().clear();
 	enemyList.clear();
 	bulletList.clear();
-	player->setPosition(-17.0f, -0.5f, 0.0f);
+	asteroidList.clear();
+	player->setPosition(-17.0f, 0.0f, 0.0f);
 	playerLifes = 3;
 	score = 0;
 	gameState = IN_GAME;
@@ -98,13 +100,19 @@ void GameManager::SetTextRenderer(shared_ptr<TextRenderer>& text) {
 	Text = text;
 }
 
+void GameManager::SetAsteroid(GraphNode * ast)
+{
+	asteroid = shared_ptr<GraphNode>(ast);
+}
+
 void GameManager::addBullet(glm::vec3& position, glm::vec3& direction, GraphNode* shootingObject)
 {
 	shared_ptr<GraphNode> tmp = std::make_shared<GraphNode>(bullet.get());
 	
-	tmp.get()->setPosition(position.x, position.y, position.z);
-	tmp.get()->SetDirection(direction);
-	tmp.get()->SetShootingObject(shootingObject);
+	tmp->setPosition(position.x, position.y, position.z);
+	tmp->SetDirection(direction);
+	tmp->SetShootingObject(shootingObject);
+	tmp->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
 	float angleRadians = glm::angle(glm::vec3(1, 0, 0), direction);
 
 	float angle = angleRadians * (float)(180 / M_PI);
@@ -122,10 +130,9 @@ void GameManager::addBullet(glm::vec3& position, glm::vec3& direction, GraphNode
 void GameManager::spawnEnemy()
 {
 	float time = (float)glfwGetTime();
-	if( time >= cooldown1)
+	if( time >= enemyCooldown)
 	{
-		enemyCooldown = static_cast <float> (rand()) / static_cast <float> (RAND_MAX) + 1.0f;
-		cooldown1 = (float)glfwGetTime() + enemyCooldown;
+		enemyCooldown = (float)glfwGetTime() + static_cast <float> (rand()) / static_cast <float> (RAND_MAX) + 1.0f;;
 		float y = -11.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (10.0f - (-11.0f) )));
 		
 		shared_ptr<GraphNode> tmp = std::make_shared<GraphNode>(enemyShip.get());
@@ -133,6 +140,26 @@ void GameManager::spawnEnemy()
 		enemyList.push_back(tmp);
 		sceneGraph->AddChild(tmp.get());
 		
+	}
+}
+
+void GameManager::spawnAsteroid()
+{
+	float time = (float)glfwGetTime();
+	if (time >= asteroidCooldown)
+	{
+		asteroidCooldown = (float)glfwGetTime() + static_cast <float> (rand()) / static_cast <float> (RAND_MAX) + 3.0f;;
+		float y = -11.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (10.0f - (-11.0f))));
+		float z = -30.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (-5.0f - (-30.0f))));
+		shared_ptr<GraphNode> tmp = std::make_shared<GraphNode>(asteroid.get());
+		tmp->setPosition(50.0f, y, z);
+		tmp->SetSpeed(static_cast <float> ((rand()) / static_cast <float> (RAND_MAX))/5);
+		float i = static_cast <float> ((rand()) / static_cast <float> (RAND_MAX)) + 1;
+		float j = -1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (1.0f - (-1.0f))));
+		j /= 2;
+		tmp->SetDirection(glm::vec3(-i, j, 0));
+		asteroidList.push_back(tmp);
+		sceneGraph->AddChild(tmp.get());
 	}
 }
 
@@ -164,6 +191,17 @@ void GameManager::moveEnemy()
 	}
 }
 
+void GameManager::moveAsteroids()
+{
+	for (shared_ptr<GraphNode>& asteroid : asteroidList)
+	{
+		glm::vec3 asteroidPos = asteroid->getPosition();
+		asteroid->setPosition(asteroidPos.x + asteroid->GetDirection().x * asteroid->GetSpeed(), 
+			asteroidPos.y + asteroid->GetDirection().y * asteroid->GetSpeed(), 
+			asteroidPos.z);
+	}
+}
+
 void GameManager::spacebarPushed(bool pushed)
 {
 	spacebar = pushed;
@@ -188,18 +226,18 @@ void GameManager::removeObjectOutsideTheCamera(vector<shared_ptr<GraphNode>>& v)
 	}
 }
 
-bool GameManager::removeNode(GraphNode* node)
+void GameManager::removeAsteroidsOutsideTheCamera(vector<shared_ptr<GraphNode>>& v)
 {
-	for (auto i = bulletList.begin(); i != bulletList.end(); i++) {
-		if (i->get()->getPosition().x == node->getPosition().x &&
-			i->get()->getPosition().y == node->getPosition().y &&
-			i->get()->getPosition().z == node->getPosition().z)
-		{
-			bulletList.erase(i);
-			return true;
+	for (shared_ptr<GraphNode>& object : v)
+	{
+		glm::vec3 xPos = object->getPosition();
+
+		if (xPos.x < -100.0f || xPos.x > 100.0f) {
+			sceneGraph->RemoveNode(object.get());
+			removeNode(v, object);
+			break;
 		}
 	}
-	return false;
 }
 
 void GameManager::removeNode(vector<shared_ptr<GraphNode>>& v, shared_ptr<GraphNode>& node) {
@@ -270,13 +308,18 @@ bool GameManager::CheckCollision(GraphNode* one, GraphNode* two)
 	if (one->IsActive() == false || two->IsActive() == false)
 		return false;
 
-	bool collisionX = one->getPosition().x + one->GetColliderSize().x >= two->getPosition().x &&
-		two->getPosition().x + two->GetColliderSize().x >= one->getPosition().x;
+	float d1x = two->GetMin().x - one->GetMax().x;
+	float d1y = two->GetMin().y - one->GetMax().y;
+	float d2x = one->GetMin().x - two->GetMax().x;
+	float d2y = one->GetMin().y - two->GetMax().y;
 
-	bool collisionY = one->getPosition().y + one->GetColliderSize().y >= two->getPosition().y &&
-		two->getPosition().y + two->GetColliderSize().y >= one->getPosition().y;
-	// Collision only if on both axes
-	return collisionX && collisionY;
+	if (d1x > 0.0f || d1y > 0.0f)
+		return false;
+
+	if (d2x > 0.0f || d2y > 0.0f)
+		return false;
+
+	return true;
 }
 
 void GameManager::EnemyShooting()

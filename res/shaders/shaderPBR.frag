@@ -3,9 +3,11 @@ out vec4 FragColor;
 in vec2 TexCoords;
 in vec3 FragPos;
 in vec3 Normal;
+in vec4 FragPosLightSpace;
 
 uniform sampler2D texture_diffuse1;
 uniform samplerCube skybox;
+uniform sampler2D shadowMap;
 
 uniform float metallic;
 uniform float roughness;
@@ -51,6 +53,7 @@ vec3 calculateDirLight(vec3 albedo, vec3 N, vec3 V);
 vec3 calculateSpotLight(vec3 albedo, vec3 N, vec3 V, SpotLight light);
 vec3 calculateReflection(vec3 N, vec3 I);
 vec3 calculateRefraction(vec3 N, vec3 I);
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 Normal, vec3 lightDir);
 
 void main()
 {
@@ -65,8 +68,8 @@ void main()
     color += calculateDirLight(albedo, N, V);
     // for(int i = 0; i < 2; i++)
     //     color += calculateSpotLight(albedo, N, V, spotLight[i]);
-    // color += calculateReflection(N, I);
-    // color += calculateRefraction(N, I);
+    color += calculateReflection(N, I);
+    color += calculateRefraction(N, I);
     
     //korekcja gamma
     color = color / (color + vec3(1.0));
@@ -140,7 +143,7 @@ vec3 calculatePointLight(vec3 albedo, vec3 N, vec3 V)
         vec3 L = normalize(pointLight.position - FragPos);
         vec3 H = normalize(V + L);
         float distance    = length(pointLight.position - FragPos);
-        float attenuation = 1.0 / 0.05;//(distance * distance);
+        float attenuation = 1.0 / (distance * distance);
         vec3 radiance     = pointLight.color * attenuation;        
 
         // cook-torrance brdf
@@ -203,7 +206,8 @@ vec3 calculateDirLight(vec3 albedo, vec3 N, vec3 V)
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;  
 
         vec3 ambient = vec3(0.03) * albedo * ao;
-        vec3 color = ambient + Lo;
+        
+        vec3 color = ambient + Lo * (1 - ShadowCalculation(FragPosLightSpace, N, L));
         return color; 
     }
     return vec3(0);
@@ -268,4 +272,26 @@ vec3 calculateRefraction(vec3 N, vec3 I)
     else
         skyboxRefract = vec3(0);
     return skyboxRefract;
+}
+
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 Normal, vec3 lightDir){
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5; 
+    float closestDepth = texture(shadowMap, projCoords.xy).r;   
+    float currentDepth = projCoords.z;
+    float bias = max(0.05 * (1.0 - dot(Normal, lightDir)), 0.005);  
+    float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+    // float shadow = 0.0;
+    // vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+    // for(int x = -1; x <= 1; ++x)
+    // {
+    //     for(int y = -1; y <= 1; ++y)
+    //     {
+    //         float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+    //         shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;        
+    //     }    
+    // }
+    if(projCoords.z > 1.0)
+        shadow = 0.0;
+    return shadow;
 }

@@ -15,21 +15,23 @@ protected:
 	
 	bool dirty;
 	bool active;
-
-	glm::vec3 colliderSize = glm::vec3(1.0f, 1.0f, 0);
+	glm::vec2 min;
+	glm::vec2 max;
 	glm::vec3 direction;
+	float speed;
 	float shootingCooldown;
 	GraphNode* shootingObject;
 public:
-	GraphNode(Model* m = nullptr, glm::vec3 cSize = glm::vec3(0))
+	GraphNode(Model* m = nullptr, glm::vec2 _min = glm::vec2(0), glm::vec2 _max = glm::vec2(0))
 	{
 		this->model = m;
 		parent = NULL;
 		transform = glm::mat4(1);
 		worldTransform = glm::mat4(1);
-		colliderSize = cSize;
 		dirty = true;
 		active = true;
+		min = _min;
+		max = _max;
 	}
 
 	GraphNode(GraphNode* graphNode)
@@ -39,8 +41,9 @@ public:
 		this->transform = graphNode->transform;
 		this->worldTransform = graphNode->worldTransform;
 		this->dirty = graphNode->dirty;
-		this->colliderSize = graphNode->colliderSize;
 		this->active = true;
+		this->min = graphNode->min;
+		this->max = graphNode->max;
 	}
 
 	~GraphNode(void) 
@@ -89,6 +92,16 @@ public:
 		}
 	}
 
+	void SetShader(Shader * shader) 
+	{
+		if (model) model->SetShader(shader);
+		
+		for (GraphNode* node : children)
+		{
+			if (node) node->SetShader(shader);
+		}
+
+	}
 	virtual void Draw() 
 	{
 		if (model && active) { model->Draw(worldTransform); }
@@ -130,11 +143,14 @@ public:
 
 	glm::mat4 GetWorldTransform() { return worldTransform; }
 
+	glm::vec3 GetWorldPosition() {
+		glm::vec3 position = glm::vec3(worldTransform[3]);
+		return position;
+	}
+
 	Model* GetModel() { return model; }
 
 	bool GetDirtyFlag() { return dirty; }
-
-	glm::vec3 GetColliderSize() { return colliderSize; }
 
 	vector<GraphNode*>& GetChildren() { return children; }
 
@@ -148,6 +164,25 @@ public:
 
 	GraphNode* GetShootingObject() { return shootingObject; }
 	void SetShootingObject(GraphNode* node) { shootingObject = node; }
+	
+	glm::vec2 GetMin() {
+		glm::vec2 pos(getPosition().x, getPosition().y);
+		glm::vec2 tmp;
+		tmp.x = pos.x + min.x;
+		tmp.y = pos.y + min.y;
+		return tmp;
+	}
+
+	glm::vec2 GetMax() {
+		glm::vec2 pos(getPosition().x, getPosition().y);
+		glm::vec2 tmp;
+		tmp.x = pos.x + max.x;
+		tmp.y = pos.y + max.y;
+		return tmp;
+	}
+
+	void SetSpeed(float s) { speed = s; }
+	float GetSpeed() { return speed; }
 };
 
 #endif // !GRAPHNODE_H

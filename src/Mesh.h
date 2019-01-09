@@ -69,15 +69,11 @@ public:
 		unsigned int specularNr = 1;
 		unsigned int normalNr = 1;
 		unsigned int heightNr = 1;
-		/*for (Vertex vert : vertices) {
-			cout << vert.Position.x << " "<< vert.Position.y << " "<< vert.Position.y << endl;
-		}*/
 		shader->use();
-		/*glm::vec3 lightPosition = glm::vec3(0, 1, 0);
-		shader->setVec3("lightPos", lightPosition);*/
-		shader->setBool("isFromFile", isFromFile);
+
 		shader->setMat4("model", model);
-		for (unsigned int i = 0; i < textures.size(); i++)
+		if(textures.size() >= 1)
+		for (unsigned int i = 0; i < 1; i++)
 		{
 			glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
 			// retrieve texture number (the N in diffuse_textureN)
