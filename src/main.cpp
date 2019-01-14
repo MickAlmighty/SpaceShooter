@@ -116,7 +116,7 @@ float slPosX = -1.3f, slPosY = -0.84f, slPosZ = 0.84f;
 float slPosX1 = 1.485f, slPosY1 = -0.89f, slPosZ1 = 1.683f;
 glm::vec3 spotLightDirection(0.5f, 0.02f, -0.34f);
 glm::vec3 spotLightDirection1(-0.89f, -0.792f, -1.683f);
-float reflectionStrength = 0.0f, refraction = 0.0f, dirLightStrenght = 0.3f;
+float reflectionStrength = 0.0f, refraction = 0.0f, dirLightStrenght = 0.6f;
 bool dirLightEnabled = true, spotLightEnabled = true, spotLightEnabled1 = true, pointLightEnabled = true;
 glm::vec3 lightPosition;
 glm::vec3 spotLightPosition;
@@ -222,7 +222,10 @@ int main()
 	Shader* textShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\text.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\text.frag");
 	shared_ptr<Shader> depthShader = std::make_shared<Shader>("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\depthShader.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\depthShader.frag");
 	shared_ptr<Shader> debugDepthQuad = std::make_shared<Shader>("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\debugDepth.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\debugDepth.frag");
-	
+	shared_ptr<Shader> cubemapDepthShader = std::make_shared<Shader>(
+		"C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\cubemapDepth.vert",
+		"C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\cubemapDepth.frag",
+		"C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\cubemapDepth.gs");
 	bool PBR = true;
 
 	Model* lightBox = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\lightBox\\LightBox.fbx");
@@ -232,12 +235,14 @@ int main()
 	//Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\x-wing\\ship.obj");
 	Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj");
 	Model* ast = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\asteroida\\Asteroid.obj");
+	Model* healthPowerUp = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\Build\\src\\res\\models\\powerups\\health\\health.obj");
 	lightBox->SetShader(ourShader2);
 	//rock->SetShader(instantiateShader);
 	spaceShip->SetShader(ourShader);
 	spaceShip2->SetShader(ourShader);
 	bullet->SetShader(ourShader);
 	ast->SetShader(ourShader);
+	healthPowerUp->SetShader(ourShader);
 	GraphNode* root = new GraphNode();
 	GraphNode* gameRoot = new GraphNode();
 	GraphNode* lightB = new GraphNode(lightBox);
@@ -247,6 +252,7 @@ int main()
 	GraphNode* cam = camera;
 	GraphNode* ship2 = new GraphNode(spaceShip2, glm::vec2(-1, -1), glm::vec2(1, 1));
 	GraphNode* asteroid = new GraphNode(ast);
+	GraphNode* health = new GraphNode(healthPowerUp, glm::vec2(-0.4, -0.4), glm::vec2(0.4, 0.4));
 	shared_ptr<GraphNode> graph(gameRoot);
 	root->AddChild(cam);
 	root->AddChild(gameRoot);
@@ -257,7 +263,8 @@ int main()
 	root->AddChild(ship);
 	root->AddChild(ship2);
 	root->AddChild(asteroid);
-
+	root->AddChild(health);
+	
 	ship->setPosition(-17, 0, 0);
 	ship->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
 	ship->Rotate(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -277,7 +284,10 @@ int main()
 	//laserBullet->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
 	laserBullet->Active(false);
 	cam->setPosition(0.0f, 0.0f, 30.0f);
-
+	
+	health->setPosition(0, 0, -1);
+	health->Scale(glm::vec3(0.045, 0.045, 0.045));
+	health->Active(false);
 	shared_ptr<TextRenderer> textPtr = std::make_shared<TextRenderer>(SCR_WIDTH, SCR_HEIGHT, textShader);
 	textPtr.get()->Load("C:/Semestr5/PAG/openGL/scrolling-shooter/res/fonts/MKStencilsansBlack.ttf", 30);
 
@@ -287,78 +297,7 @@ int main()
 	gameManager.setEnemyShip(ship2);
 	gameManager.SetTextRenderer(textPtr);
 	gameManager.SetAsteroid(asteroid);
-	//skaly 
-	{
-	//unsigned int amount = 1000;
-	//glm::mat4* modelMatrices;
-	//modelMatrices = new glm::mat4[amount];
-	//srand((unsigned int)glfwGetTime()); // initialize random seed	
-	//float radius = 5.0;
-	//float offset = 1.25f;
-	//for (unsigned int i = 0; i < amount; i++)
-	//{
-	//	glm::mat4 model(1);
-	//	// 1. translation: displace along circle with 'radius' in range [-offset, offset]
-	//	float angle = (float)i / (float)amount * 360.0f;
-	//	float displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
-	//	float x = sin(angle) * radius + displacement;
-	//	displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
-	//	float y = displacement * 0.4f; // keep height of asteroid field smaller compared to width of x and z
-	//	displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
-	//	float z = cos(angle) * radius + displacement;
-	//	model = glm::translate(model, glm::vec3(x, y, z));
-	
-	//	// 2. scale: Scale between 0.05 and 0.25f
-	//	float scale = (rand() % 20) / 100.0f + 0.05f;
-	//	model = glm::scale(model, glm::vec3(scale));
-
-	//	// 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
-	//	float rotAngle = (float)(rand() % 360);
-	//	model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
-
-	//	// 4. now add to list of matrices
-	//	modelMatrices[i] = model;
-	//}
-	/*for (int i = 0; i < amount; i++) {
-		for(int j = 0; j < 4; j++)
-			for (int k = 0; k < 4; k++) {
-				glm::mat4 mat = modelMatrices[i];
-				cout << mat[j][k] << endl;
-			}
-	}*/
-	// configure instanced array
-	// -------------------------
-	/*unsigned int buffer;
-	glGenBuffers(1, &buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);*/
-
-	// set transformation matrices as an instance vertex attribute (with divisor 1)
-	// note: we're cheating a little by taking the, now publicly declared, VAO of the model's mesh(es) and adding new vertexAttribPointers
-	// normally you'd want to do this in a more organized fashion, but for learning purposes this will do.
-	// -----------------------------------------------------------------------------------------------------------------------------------
-	//for (unsigned int i = 0; i < rock->meshes.size(); i++)
-	//{
-	//	unsigned int VAO = rock->meshes[i]->VAO;
-	//	glBindVertexArray(VAO);
-	//	// set attribute pointers for matrix (4 times vec4)
-	//	glEnableVertexAttribArray(3);
-	//	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
-	//	glEnableVertexAttribArray(4);
-	//	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
-	//	glEnableVertexAttribArray(5);
-	//	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
-	//	glEnableVertexAttribArray(6);
-	//	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
-
-	//	glVertexAttribDivisor(3, 1);
-	//	glVertexAttribDivisor(4, 1);
-	//	glVertexAttribDivisor(5, 1);
-	//	glVertexAttribDivisor(6, 1);
-
-	//	glBindVertexArray(0);
-	//}
-	}
+	gameManager.SetHealthPowerUp(health);
 
 	unsigned int depthMapFBO;
 	glGenFramebuffers(1, &depthMapFBO);
@@ -383,6 +322,36 @@ int main()
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		return false;
+
+///////////////////////////////////////////////
+
+	unsigned int depthCubemap;
+	glGenTextures(1, &depthCubemap);
+	unsigned int depthMapFBO1;
+	glGenFramebuffers(1, &depthMapFBO1);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO1);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	for (unsigned int i = 0; i < 6; ++i)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT,
+			SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO1);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		return false;
+
+	float aspect = (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT;
+	glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, 1.0f, 25.0f);
+///////////////////////////////////////////////
 	glm::mat4 view(1);
 	glm::mat4 projection(1);
 	
@@ -483,6 +452,7 @@ int main()
 		glm::mat4 projection = glm::perspective(glm::radians(camera->Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera->GetViewMatrix();
 		lightPosition = lightB->GetWorldPosition();
+
 		glm::mat4 DirLightPosition(1);
 		DirLightPosition[3][0] = lightDirection.x;
 		DirLightPosition[3][1] = lightDirection.y;
@@ -494,33 +464,65 @@ int main()
 
 		glm::mat4 lightProjection(1), lightView(1);
 		
-		float near_plane = -20.0f, far_plane = 20.0f;
+		float near_plane = -20.0f, far_plane = 50.0f;
 		lightProjection = glm::ortho(-30.0f, 30.0f, -30.0f, 30.0f, near_plane, far_plane);
 		lightView = glm::lookAt(WorldLightDirection, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
 		lightSpaceMatrix = lightProjection * lightView;
 
+
+		std::vector<glm::mat4> shadowTransforms;
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPosition, lightPosition + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPosition, lightPosition + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
 		depthShader->use();
 		depthShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
-		glViewport(0, 0, SCR_WIDTH, SCR_WIDTH);
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glCullFace(GL_FRONT);
 		root->SetShader(depthShader.get());
 		root->Draw();
 		glCullFace(GL_BACK);
-		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+		
+		//cubemapDepthShader->use();
+		//for (unsigned int i = 0; i < 6; ++i)v
+		//cubemapDepthShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+		//cubemapDepthShader->setVec3("lightPos", lightPosition);
+		//cubemapDepthShader->setFloat("far_plane", 25.0f);
+		//root->SetShader(cubemapDepthShader.get());
+		//// 1. wygeneruj mapê g³êbokoœci
+		//glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+		//glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO1);
+		//glClear(GL_DEPTH_BUFFER_BIT);
+		//root->Draw();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		// 2. normalnie wyrenderuj scenê korzystaj¹c z mapy g³êbokoœci (cubemap)
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 
 		root->SetShader(ourShader);
 		ourShader->use();
 		ourShader->setMat4("view", view);
 		ourShader->setMat4("projection", projection);
 		ourShader->setMat4("LightSpaceMatrix", lightSpaceMatrix);
+		ourShader->setFloat("far_plane", 25.0f);
 		ourShader->setInt("shadowMap", 1);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
-
+		ourShader->setInt("depthMap", 2);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
 
 		
 
@@ -545,16 +547,6 @@ int main()
 			//setPhongShader(instantiateShader);
 		}
 		root->Draw();
-
-		////glActiveTexture(GL_TEXTURE0);
-		////glBindTexture(GL_TEXTURE_2D, rock->textures_loaded[0].id); // note: we also made the textures_loaded vector public (instead of private) from the model class.
-		////for (unsigned int i = 0; i < rock->meshes.size(); i++)
-		////{
-		////	glBindVertexArray(rock->meshes[i]->VAO);
-		////	glDrawElementsInstanced(GL_TRIANGLES, rock->meshes[i]->indices.size(), GL_UNSIGNED_INT, 0, amount);
-		////	glBindVertexArray(0);
-		////}
-		
 
 		glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
 		skyBoxShader->use();

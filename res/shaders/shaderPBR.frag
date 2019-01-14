@@ -8,6 +8,7 @@ in vec4 FragPosLightSpace;
 uniform sampler2D texture_diffuse1;
 uniform samplerCube skybox;
 uniform sampler2D shadowMap;
+uniform samplerCube depthMap;
 
 uniform float metallic;
 uniform float roughness;
@@ -15,6 +16,7 @@ uniform float ao;
 uniform vec3 camPos;
 uniform float reflectionStrength;
 uniform float refraction;
+uniform float far_plane;
 
 // światła
 struct PointLight {
@@ -54,6 +56,7 @@ vec3 calculateSpotLight(vec3 albedo, vec3 N, vec3 V, SpotLight light);
 vec3 calculateReflection(vec3 N, vec3 I);
 vec3 calculateRefraction(vec3 N, vec3 I);
 float ShadowCalculation(vec4 fragPosLightSpace, vec3 Normal, vec3 lightDir);
+float PointLightShadowCalculation(vec3 fragPos);
 
 void main()
 {
@@ -127,7 +130,7 @@ vec3 calculateSpotLight(vec3 albedo, vec3 N, vec3 V, SpotLight light)
         return color;
     }
     return vec3(0);
-    
+
 }
 
 vec3 calculatePointLight(vec3 albedo, vec3 N, vec3 V)
@@ -166,7 +169,7 @@ vec3 calculatePointLight(vec3 albedo, vec3 N, vec3 V)
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;  
 
         vec3 ambient = vec3(0.03) * albedo * ao;
-        vec3 color = ambient + Lo;
+        vec3 color = ambient + Lo;// * PointLightShadowCalculation(FragPos);
         return color;
     }
     return vec3(0);
@@ -294,4 +297,18 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 Normal, vec3 lightDir){
     if(projCoords.z > 1.0)
         shadow = 0.0;
     return shadow;
+}
+
+float PointLightShadowCalculation(vec3 fragPos)
+{
+    vec3 fragToLight = fragPos - pointLight.position; 
+    float closestDepth = texture(depthMap, fragToLight).r;
+    closestDepth *= far_plane;  
+    float currentDepth = length(fragToLight);
+        // now test for shadows
+        float bias = 0.05; 
+        float shadow = currentDepth -  bias > closestDepth ? 1.0 : 0.0;
+
+        return shadow;
+    return 0;
 }

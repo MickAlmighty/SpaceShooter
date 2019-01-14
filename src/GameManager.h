@@ -12,57 +12,67 @@ enum STATE {
 	IN_GAME
 };
 
+using NodePtr = shared_ptr<GraphNode>;
 class GameManager
 {
 private:
 	const float bulletSpeed = 0.4f;
-	shared_ptr<GraphNode> sceneGraph;
-	shared_ptr<GraphNode> player;
-	shared_ptr<GraphNode> enemyShip;
-	shared_ptr<GraphNode> bullet;
+	NodePtr sceneGraph;
+	NodePtr player;
+	NodePtr enemyShip;
+	NodePtr bullet;
 	shared_ptr<TextRenderer> Text;
-	shared_ptr<GraphNode> asteroid;
+	NodePtr asteroid;
+	NodePtr healthPowerUp;
 	float* horizontalDirection;
 	float* verticalDirection;
-	vector<shared_ptr<GraphNode>> bulletList;
-	vector<shared_ptr<GraphNode>> enemyList;
-	vector<shared_ptr<GraphNode>> asteroidList;
+	vector<NodePtr> bulletList;
+	vector<NodePtr> enemyList;
+	vector<NodePtr> asteroidList;
+	vector<NodePtr> healthPowerUpList;
+	
 	bool spacebar;
 	bool enter;
+	
 	float cooldown = 0;
 	float asteroidCooldown = 0;
 	float enemyCooldown = 1.0f;
 	float enemySpeed = 0.15f;
+	float powerUpCooldown = 0;
 	int playerLifes = 3;
 	int score = 0;
 	bool gameInit = true;
+	
 	STATE gameState = IN_MENU;
 	ISoundEngine *SoundEngine;
 
 	bool SpacebarIsPushed();
 	bool EnterIsPushed();
-	void removeObjectOutsideTheCamera(vector<shared_ptr<GraphNode>>&);
-	void removeAsteroidsOutsideTheCamera(vector<shared_ptr<GraphNode>>& v);
-	void removeNode(vector<shared_ptr<GraphNode>>& , shared_ptr<GraphNode>&);
+	void removeObjectOutsideTheCamera(vector<NodePtr>&);
+	void removeAsteroidsOutsideTheCamera(vector<NodePtr>& v);
+	void removeNode(vector<NodePtr>& , NodePtr&);
 	void ShootIfPossible();
-	bool CheckCollision(GraphNode*, GraphNode*);
+	bool CheckCollision(GraphNode*, GraphNode*, bool bulletMode = false);
 	void DoCollision();
 	void EnemyShooting();
 public:
-	GameManager(shared_ptr<GraphNode> graph, float* , float*);
+	GameManager(NodePtr graph, float* , float*);
 	~GameManager();
 	void setPlayer(GraphNode* playerPtr);
 	void setBullet(GraphNode* bulletPtr);
 	void setEnemyShip(GraphNode* enemy);
 	void SetTextRenderer(shared_ptr<TextRenderer>& text);
 	void SetAsteroid(GraphNode* ast);
+	void SetHealthPowerUp(GraphNode* health);
 	void addBullet(glm::vec3&, glm::vec3 &, GraphNode*);
 	void spawnEnemy();
 	void spawnAsteroid();
+	void spawnPowerUps();
 	void movePlayer();
 	void moveBullets();
 	void moveEnemy();
 	void moveAsteroids();
+	void moveHealthPowerUps();
 	void spacebarPushed(bool);
 	void enterPushed(bool);
 	void GameOps();
