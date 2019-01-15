@@ -233,9 +233,12 @@ int main()
 	Model* spaceShip = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj");
 	Model* bullet = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\bullet\\bullet.obj");
 	//Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\x-wing\\ship.obj");
-	Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj");
+	Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\enemy_spaceship\\Wraith Raider Starship.obj");
 	Model* ast = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\asteroida\\Asteroid.obj");
 	Model* healthPowerUp = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\Build\\src\\res\\models\\powerups\\health\\health.obj");
+	Model* doubleShotsPowerUp = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\Build\\src\\res\\models\\powerups\\doubleShooting\\doubleShots.obj");
+
+
 	lightBox->SetShader(ourShader2);
 	//rock->SetShader(instantiateShader);
 	spaceShip->SetShader(ourShader);
@@ -243,16 +246,19 @@ int main()
 	bullet->SetShader(ourShader);
 	ast->SetShader(ourShader);
 	healthPowerUp->SetShader(ourShader);
+	doubleShotsPowerUp->SetShader(ourShader);
+
 	GraphNode* root = new GraphNode();
 	GraphNode* gameRoot = new GraphNode();
 	GraphNode* lightB = new GraphNode(lightBox);
 	GraphNode* pointLightPivot = new GraphNode();
-	GraphNode* ship = new GraphNode(spaceShip, glm::vec2(-2, -0.5), glm::vec2(0, 0.5));
+	GraphNode* ship = new GraphNode(spaceShip, glm::vec2(-2, -0.7), glm::vec2(0, 0.5));
 	GraphNode* laserBullet = new GraphNode(bullet, glm::vec2(-0.2, -0.1), glm::vec2(0.2, 0.1));
 	GraphNode* cam = camera;
 	GraphNode* ship2 = new GraphNode(spaceShip2, glm::vec2(-1, -1), glm::vec2(1, 1));
 	GraphNode* asteroid = new GraphNode(ast);
 	GraphNode* health = new GraphNode(healthPowerUp, glm::vec2(-0.4, -0.4), glm::vec2(0.4, 0.4));
+	GraphNode* doubleShots = new GraphNode(doubleShotsPowerUp, glm::vec2(-0.4, -0.4), glm::vec2(0.4, 0.4));
 	shared_ptr<GraphNode> graph(gameRoot);
 	root->AddChild(cam);
 	root->AddChild(gameRoot);
@@ -264,6 +270,8 @@ int main()
 	root->AddChild(ship2);
 	root->AddChild(asteroid);
 	root->AddChild(health);
+	root->AddChild(doubleShots);
+	
 	
 	ship->setPosition(-17, 0, 0);
 	ship->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
@@ -281,13 +289,18 @@ int main()
 	asteroid->Active(false);
 
 	laserBullet->setPosition(0, 0, -3);
-	//laserBullet->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
+	laserBullet->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
 	laserBullet->Active(false);
 	cam->setPosition(0.0f, 0.0f, 30.0f);
-	
+
 	health->setPosition(0, 0, -1);
 	health->Scale(glm::vec3(0.045, 0.045, 0.045));
 	health->Active(false);
+
+	doubleShots->setPosition(0, 0, -1);
+	doubleShots->Rotate(90.0f, glm::vec3(1, 0, 0));
+	doubleShots->Scale(glm::vec3(0.045, 0.045, 0.045));
+	doubleShots->Active(false);
 	shared_ptr<TextRenderer> textPtr = std::make_shared<TextRenderer>(SCR_WIDTH, SCR_HEIGHT, textShader);
 	textPtr.get()->Load("C:/Semestr5/PAG/openGL/scrolling-shooter/res/fonts/MKStencilsansBlack.ttf", 30);
 
@@ -298,6 +311,7 @@ int main()
 	gameManager.SetTextRenderer(textPtr);
 	gameManager.SetAsteroid(asteroid);
 	gameManager.SetHealthPowerUp(health);
+	gameManager.SetDoubleShotsPowerUp(doubleShots);
 
 	unsigned int depthMapFBO;
 	glGenFramebuffers(1, &depthMapFBO);
@@ -464,7 +478,7 @@ int main()
 
 		glm::mat4 lightProjection(1), lightView(1);
 		
-		float near_plane = -20.0f, far_plane = 50.0f;
+		float near_plane = -10.0f, far_plane = 100.0f;
 		lightProjection = glm::ortho(-30.0f, 30.0f, -30.0f, 30.0f, near_plane, far_plane);
 		lightView = glm::lookAt(WorldLightDirection, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
 		lightSpaceMatrix = lightProjection * lightView;
@@ -652,19 +666,19 @@ void processInput(GLFWwindow *window)
 		glfwSetCursorPosCallback(window, NULL);
 	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
 		glfwSetCursorPosCallback(window, mouse_callback);*/
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
 		verticalDirection = spaceshipSpeed;
 		horizontalDirection = 0.0f;
 	}	
-	else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+	else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
 		verticalDirection = -spaceshipSpeed;
 		horizontalDirection = 0.0f;
 	}	
-	else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+	else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
 		horizontalDirection = -spaceshipSpeed;
 		verticalDirection = 0.0f;
 	}
-	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
 		horizontalDirection = spaceshipSpeed;
 		verticalDirection = 0.0f;
 	}

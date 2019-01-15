@@ -24,37 +24,40 @@ GameManager::~GameManager()
 void GameManager::GameOps()
 {
 	stringstream ss;
-	if (gameState == IN_GAME) 
+	if (GAME_STATE == IN_GAME) 
 	{
 		ShootIfPossible();
 		spawnEnemy();
 		EnemyShooting();
 		spawnAsteroid();
-		spawnPowerUps();
-
+		spawnPowerUps(HEALTH_POWERUP_COOLDOWN, healthPowerUpList, healthPowerUp);
+		spawnPowerUps(DOUBLE_SHOTS_POWERUP_COOLDOWN, doubleShotsPowerUpList, doubleShotPowerUp);
+		
 		movePlayer();
-		moveBullets();
-		moveEnemy();
-		moveAsteroids();
-		moveHealthPowerUps();
+		moveObjects(bulletList);
+		moveObjects(enemyList);
+		moveObjects(asteroidList);
+		moveObjects(healthPowerUpList);
+		moveObjects(doubleShotsPowerUpList);
 
 		DoCollision();
 		removeObjectOutsideTheCamera(bulletList);
 		removeObjectOutsideTheCamera(enemyList);
-		removeAsteroidsOutsideTheCamera(asteroidList);
 		removeObjectOutsideTheCamera(healthPowerUpList);
-		ss << playerLifes;
+		removeObjectOutsideTheCamera(doubleShotsPowerUpList);
+		removeAsteroidsOutsideTheCamera(asteroidList);
+		ss << PLAYER_LIFES;
 		Text.get()->RenderText("Lives: " + ss.str(), 10.0f, 10.0f, 1.0f);
 		ss.str("");
-		ss << score;
+		ss << SCORE;
 		Text.get()->RenderText("Score: " + ss.str(), 10.0f, 55.0f, 1.0f);
 	}
-	if(gameState == IN_MENU)
+	if(GAME_STATE == IN_MENU)
 	{
 		Text->RenderText("Press ENTER to start", 500.0f, 360.0f, 1.0f);
 		if (!gameInit)
 		{
-			ss << score;
+			ss << SCORE;
 			Text.get()->RenderText("Score: " + ss.str(), 590.0f, 400.0f, 1.0f);
 		}
 		if (EnterIsPushed()) {
@@ -76,9 +79,9 @@ void GameManager::ResetGame()
 	bulletList.clear();
 	asteroidList.clear();
 	player->setPosition(-17.0f, 0.0f, 0.0f);
-	playerLifes = 3;
-	score = 0;
-	gameState = IN_GAME;
+	PLAYER_LIFES = 3;
+	SCORE = 0;
+	GAME_STATE = IN_GAME;
 	gameInit = false;
 }
 
@@ -112,27 +115,52 @@ void GameManager::SetHealthPowerUp(GraphNode * health)
 {
 	healthPowerUp = NodePtr(health);
 }
+void GameManager::SetDoubleShotsPowerUp(GraphNode * powerUp) {
+	doubleShotPowerUp = NodePtr(powerUp);
+}
 
-void GameManager::addBullet(glm::vec3& position, glm::vec3& direction, GraphNode* shootingObject)
+void GameManager::addBullet(glm::vec3& position, glm::vec3& direction, GraphNode* shootingObject, WEAPON mode)
 {
-	NodePtr tmp = std::make_shared<GraphNode>(bullet.get());
 	
-	tmp->setPosition(position.x, position.y, position.z);
-	tmp->SetDirection(direction);
-	tmp->SetSpeed(bulletSpeed);
-	tmp->SetShootingObject(shootingObject);
-	tmp->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
-	float angleRadians = glm::angle(glm::vec3(1, 0, 0), direction);
+	if (mode == SINGLE_SHOT) 
+	{
+		NodePtr oneBullet = std::make_shared<GraphNode>(bullet.get());
+		oneBullet->setPosition(position.x, position.y, position.z);
+		oneBullet->SetDirection(direction);
+		oneBullet->SetSpeed(BULLET_SPEED);
+		oneBullet->SetShootingObject(shootingObject);
+		float angleRadians = glm::angle(glm::vec3(1, 0, 0), direction);
 
-	float angle = angleRadians * (float)(180 / M_PI);
-	if(player->getPosition().y > shootingObject->getPosition().y)
-		tmp.get()->Rotate(angle, glm::vec3(0, 0, 1));
-	else
-		tmp.get()->Rotate(-angle, glm::vec3(0, 0, 1));
+		float angle = angleRadians * (float)(180 / M_PI);
+		if (player->getPosition().y > shootingObject->getPosition().y)
+			oneBullet.get()->Rotate(angle, glm::vec3(0, 0, 1));
+		else
+			oneBullet.get()->Rotate(-angle, glm::vec3(0, 0, 1));
+
+
+		bulletList.push_back(oneBullet);
+		sceneGraph->AddChild(oneBullet.get());
+	}
+	else if (mode == DOUBLE_SHOT)
+	{
+		NodePtr firstBullet = std::make_shared<GraphNode>(bullet.get());
+		firstBullet->setPosition(position.x, position.y + 0.2f, position.z);
+		firstBullet->SetDirection(direction);
+		firstBullet->SetSpeed(BULLET_SPEED);
+		firstBullet->SetShootingObject(shootingObject);
+
+		NodePtr secondBullet = std::make_shared<GraphNode>(bullet.get());
+		secondBullet->setPosition(position.x, position.y - 0.25f, position.z);
+		secondBullet->SetDirection(direction);
+		secondBullet->SetSpeed(BULLET_SPEED);
+		secondBullet->SetShootingObject(shootingObject);
+
+		bulletList.push_back(firstBullet);
+		bulletList.push_back(secondBullet);
+		sceneGraph->AddChild(firstBullet.get());
+		sceneGraph->AddChild(secondBullet.get());
+	}
 	
-	
-	bulletList.push_back(tmp);
-	sceneGraph->AddChild(tmp.get());
 	ISound* soundLoaded = SoundEngine->play2D("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\sounds\\Blast.mp3", GL_FALSE, GL_TRUE);
 	if (soundLoaded) {
 		soundLoaded->setVolume(0.5f);
@@ -144,12 +172,14 @@ void GameManager::addBullet(glm::vec3& position, glm::vec3& direction, GraphNode
 void GameManager::spawnEnemy()
 {
 	float time = (float)glfwGetTime();
-	if( time >= enemyCooldown)
+	if( time >= ENEMY_COOLDOWN)
 	{
-		enemyCooldown = (float)glfwGetTime() + static_cast <float> (rand()) / static_cast <float> (RAND_MAX) + 1.0f;;
+		ENEMY_COOLDOWN = (float)glfwGetTime() + static_cast <float> (rand()) / static_cast <float> (RAND_MAX) + 1.0f;;
 		float y = -11.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (10.0f - (-11.0f) )));
 		
 		NodePtr tmp = std::make_shared<GraphNode>(enemyShip.get());
+		tmp->SetDirection(glm::vec3(-1.0f, 0.0f, 0.0f));
+		tmp->SetSpeed(ENEMY_SPEED);
 		tmp->setPosition(25.0f, y, 0.0f);
 		enemyList.push_back(tmp);
 		sceneGraph->AddChild(tmp.get());
@@ -160,9 +190,9 @@ void GameManager::spawnEnemy()
 void GameManager::spawnAsteroid()
 {
 	float time = (float)glfwGetTime();
-	if (time >= asteroidCooldown)
+	if (time >= ASTEROID_COOLDOWN)
 	{
-		asteroidCooldown = (float)glfwGetTime() + static_cast <float> (rand()) / static_cast <float> (RAND_MAX) + 1.5f;;
+		ASTEROID_COOLDOWN = (float)glfwGetTime() + static_cast <float> (rand()) / static_cast <float> (RAND_MAX) + 1.5f;;
 		float y = -11.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (10.0f - (-11.0f))));
 		float z = -30.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (-5.0f - (-30.0f))));
 		NodePtr tmp = std::make_shared<GraphNode>(asteroid.get());
@@ -177,20 +207,20 @@ void GameManager::spawnAsteroid()
 	}
 }
 
-void GameManager::spawnPowerUps()
+void GameManager::spawnPowerUps(float& cooldown, vector<NodePtr>& powerUps, NodePtr& prefab)
 {
 	float time = (float)glfwGetTime();
-	if (time >= powerUpCooldown)
+	if (time >= cooldown)
 	{
-		powerUpCooldown = (float)glfwGetTime() + 10.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (20.0f - 10.0f)));
-		NodePtr tmp = std::make_shared<GraphNode>(healthPowerUp.get());
+		cooldown = (float)glfwGetTime() + 10.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (20.0f - 10.0f)));
+		NodePtr tmp = std::make_shared<GraphNode>(prefab.get());
 		
 		float y = -11.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (10.0f - (-11.0f))));
 		
 		tmp->setPosition(25.0f, y, -0.5f);
 		tmp->SetSpeed(0.2f);
 		tmp->SetDirection(glm::vec3(-1, 0, 0));
-		healthPowerUpList.push_back(tmp);
+		powerUps.push_back(tmp);
 		sceneGraph->AddChild(tmp.get());
 	}
 }
@@ -205,43 +235,13 @@ void GameManager::movePlayer()
 	}
 }
 
-void GameManager::moveBullets()
+void GameManager::moveObjects(vector<NodePtr>& objectContainer)
 {
-	for (NodePtr& bullet : bulletList) {
-		glm::vec3 bulletPos = bullet->getPosition();
-		
-		bullet->setPosition(bulletPos.x + bullet->GetDirection().x * bullet->GetSpeed(), 
-			bulletPos.y + bullet->GetDirection().y * bullet->GetSpeed(), bulletPos.z);
-	}
-}
+	for (NodePtr& gameObject : objectContainer) {
+		glm::vec3 gameObjectPos = gameObject->getPosition();
 
-void GameManager::moveEnemy()
-{
-	for (NodePtr& enemy : enemyList)
-	{
-		glm::vec3 enemyPos = enemy->getPosition();
-		enemy->setPosition(enemyPos.x - enemySpeed, enemyPos.y, enemyPos.z);
-	}
-}
-
-void GameManager::moveAsteroids()
-{
-	for (NodePtr& asteroid : asteroidList)
-	{
-		glm::vec3 asteroidPos = asteroid->getPosition();
-		asteroid->setPosition(asteroidPos.x + asteroid->GetDirection().x * asteroid->GetSpeed(), 
-			asteroidPos.y + asteroid->GetDirection().y * asteroid->GetSpeed(), 
-			asteroidPos.z);
-	}
-}
-
-void GameManager::moveHealthPowerUps()
-{
-	for (NodePtr& powerUp : healthPowerUpList) {
-		glm::vec3 powerUpPos = powerUp->getPosition();
-
-		powerUp->setPosition(powerUpPos.x + powerUp->GetDirection().x * powerUp->GetSpeed(),
-			powerUpPos.y + powerUp->GetDirection().y * powerUp->GetSpeed(), powerUpPos.z);
+		gameObject->setPosition(gameObjectPos.x + gameObject->GetDirection().x * gameObject->GetSpeed(),
+			gameObjectPos.y + gameObject->GetDirection().y * gameObject->GetSpeed(), gameObjectPos.z);
 	}
 }
 
@@ -301,11 +301,11 @@ void GameManager::ShootIfPossible()
 {
 	static volatile bool playerShot = false;
 	if (playerShot) {
-		cooldown = (float)glfwGetTime() + 0.4f;
+		COOLDOWN = (float)glfwGetTime() + 0.4f;
 	}
-	if (SpacebarIsPushed() && (float)glfwGetTime() >= cooldown)
+	if (SpacebarIsPushed() && (float)glfwGetTime() >= COOLDOWN)
 	{
-		addBullet(player->getPosition(), glm::vec3(1, 0, 0), player.get());
+		addBullet(player->getPosition(), glm::vec3(1, 0, 0), player.get(), WEAPON_MODE);
 		playerShot = true;
 	}
 	else
@@ -321,7 +321,25 @@ void GameManager::DoCollision()
 		if (CheckCollision(player.get(), healtPowerUp.get()))
 		{
 			healtPowerUp->Active(false);
-			playerLifes += 1;
+			PLAYER_LIFES += 1;
+			ISound* soundLoaded = SoundEngine->play2D("C:/Semestr5/PAG/openGL/scrolling-shooter/Build/src/res/sounds/PowerUp.mp3", GL_FALSE, GL_TRUE);
+			if (soundLoaded) {
+				soundLoaded->setVolume(2.0f);
+				soundLoaded->setIsPaused(false);
+				soundLoaded->drop();
+			}
+		}
+	}
+
+	for (NodePtr& doubleShotPowerUp : doubleShotsPowerUpList)
+	{
+		if (CheckCollision(player.get(), doubleShotPowerUp.get()))
+		{
+			doubleShotPowerUp->Active(false);
+			if (WEAPON_MODE == DOUBLE_SHOT) {
+				SCORE += 20;
+			}
+			WEAPON_MODE = DOUBLE_SHOT;
 			ISound* soundLoaded = SoundEngine->play2D("C:/Semestr5/PAG/openGL/scrolling-shooter/Build/src/res/sounds/PowerUp.mp3", GL_FALSE, GL_TRUE);
 			if (soundLoaded) {
 				soundLoaded->setVolume(2.0f);
@@ -343,7 +361,7 @@ void GameManager::DoCollision()
 					soundLoaded->setIsPaused(false);
 					soundLoaded->drop();
 				}
-				score += 10;
+				SCORE += 10;
 				break;
 			}
 				
@@ -352,17 +370,17 @@ void GameManager::DoCollision()
 		{
 			bullet->Active(false);
 
-			playerLifes -= 1;
+			PLAYER_LIFES -= 1;
+			WEAPON_MODE = SINGLE_SHOT;
 			ISound* soundLoaded = SoundEngine->play2D("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\sounds\\Explosion.mp3", GL_FALSE, GL_TRUE);
 			if (soundLoaded) {
 				soundLoaded->setVolume(0.5f);
 				soundLoaded->setIsPaused(false);
 				soundLoaded->drop();
 			}
-			cout<<SoundEngine->getSoundSourceCount()<<endl;
 			cout << "Gracz trafiony" << endl;
-			if (playerLifes == 0)
-				gameState = IN_MENU;
+			if (PLAYER_LIFES == 0)
+				GAME_STATE = IN_MENU;
 			break;
 		}
 	}
@@ -404,11 +422,11 @@ void GameManager::EnemyShooting()
 			{
 				glm::vec3 dir = glm::normalize(player->getPosition() - enemy->getPosition());
 
-				addBullet(enemy->getPosition(), dir, enemy.get());
+				addBullet(enemy->getPosition(), dir, enemy.get(), WEAPON::SINGLE_SHOT);
 			}
 			else 
 			{
-				addBullet(enemy->getPosition(), glm::vec3(-1.0f, 0.0f, 0.0f), enemy.get());
+				addBullet(enemy->getPosition(), glm::vec3(-1.0f, 0.0f, 0.0f), enemy.get(), WEAPON::SINGLE_SHOT);
 			}
 			
 		}
