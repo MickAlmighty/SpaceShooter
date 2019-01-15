@@ -26,7 +26,9 @@ private:
 	string directory;
 	Shader* shader;
 	bool isFromFile;
-
+	float ao = 0.1f;
+	float metaliness = 0.5f;
+	float roughness = 0.9f;
 	/*  Funkcje   */
 	void loadModel(string const &path)
 	{
@@ -193,19 +195,23 @@ public:
 	vector<Texture> textures_loaded;
 	void SetShader(Shader* s) { shader = s; }
 	/*  Funkcje   */
-	Model(char *path)
+	Model(char *path, float _ao = 0.1f, float _metaliness = 0.5f, float _roughness = 0.2f) 
+		: ao(_ao), metaliness(_metaliness), roughness(_roughness)
 	{
 		isFromFile = true;
 		loadModel(path);
 	}
+	
 	Model() {
 		isFromFile = false;
 	}
+	
 	Model(Mesh* mesh) 
 	{
 		isFromFile = false;
 		meshes.push_back(mesh);
 	}
+	
 	~Model() {
 		for (Mesh* mesh : meshes) {
 			delete mesh;
@@ -214,6 +220,12 @@ public:
 
 	void Draw(glm::mat4 &model)
 	{
+		if (shader) {
+			shader->use();
+			shader->setFloat("ao", ao);
+			shader->setFloat("metallic", metaliness);
+			shader->setFloat("roughness", roughness);
+		}
 		for (unsigned int i = 0; i < meshes.size(); i++)
 		{
 			meshes[i]->Draw(shader, model, isFromFile);

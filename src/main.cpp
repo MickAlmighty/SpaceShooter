@@ -38,8 +38,8 @@ static void glfw_error_callback(int error, const char* description)
 }
 
 // settings
-const unsigned int SCR_WIDTH = 1280;
-const unsigned int SCR_HEIGHT = 720;
+int SCR_WIDTH = 1280;
+int SCR_HEIGHT = 720;
 
 GLfloat deltaTime = 0.0f; // Czas pomiêdzy obecn¹ i poprzedni¹ klatk¹  
 GLfloat lastFrame = 0.0f; // Czas ostatniej ramki
@@ -111,12 +111,12 @@ float metallines = 0.2f, roughness = 0.229f, ao = 0.25f;
 glm::vec3 lightAmbient(1.0f, 1.0f, 1.0f);
 glm::vec3 lightDiffuse(0.3f, 0.2f, 0.8f);
 glm::vec3 lightSpecular(1.0f, 1.0f, 1.0f);
-glm::vec3 lightDirection(-0.644f, 1.05f, 1.963f);
+glm::vec3 lightDirection(-5.16f, 1.05f, 8.082f);
 float slPosX = -1.3f, slPosY = -0.84f, slPosZ = 0.84f;
 float slPosX1 = 1.485f, slPosY1 = -0.89f, slPosZ1 = 1.683f;
 glm::vec3 spotLightDirection(0.5f, 0.02f, -0.34f);
 glm::vec3 spotLightDirection1(-0.89f, -0.792f, -1.683f);
-float reflectionStrength = 0.0f, refraction = 0.0f, dirLightStrenght = 0.6f;
+float reflectionStrength = 0.0f, refraction = 0.0f, dirLightStrenght = 0.35f;
 bool dirLightEnabled = true, spotLightEnabled = true, spotLightEnabled1 = true, pointLightEnabled = true;
 glm::vec3 lightPosition;
 glm::vec3 spotLightPosition;
@@ -230,14 +230,15 @@ int main()
 
 	Model* lightBox = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\lightBox\\LightBox.fbx");
 	Model* rock = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\rock\\rock.obj");
-	Model* spaceShip = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj");
-	Model* bullet = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\bullet\\bullet.obj");
+	Model* spaceShip = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj", 0.25f, 0.75f, 0.386f);
+	Model* bullet = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\bullet\\bullet.obj", 1.0f, 0.0f, 0.121f);
 	//Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\x-wing\\ship.obj");
-	Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\enemy_spaceship\\Wraith Raider Starship.obj");
-	Model* ast = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\asteroida\\Asteroid.obj");
-	Model* healthPowerUp = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\Build\\src\\res\\models\\powerups\\health\\health.obj");
-	Model* doubleShotsPowerUp = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\Build\\src\\res\\models\\powerups\\doubleShooting\\doubleShots.obj");
-
+	Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\enemy_spaceship\\Wraith Raider Starship.obj", 0.25f, 0.75f, 0.386f);
+	Model* ast = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\asteroida\\Asteroid.obj", 0.11f, 0.129f, 0.49f);
+	Model* healthPowerUp = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\Build\\src\\res\\models\\powerups\\health\\health.obj", 0.11f, 0.129f, 0.49f);
+	Model* doubleShotsPowerUp = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\Build\\src\\res\\models\\powerups\\doubleShooting\\doubleShots.obj", 0.11f, 0.129f, 0.49f);
+	Model* moonModel = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\Build\\src\\res\\models\\moon\\moon.obj", 0.11f, 0.129f, 0.49f);
+	Model* ufo = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\Build\\src\\res\\models\\ufo\\Low_poly_UFO.obj");
 
 	lightBox->SetShader(ourShader2);
 	//rock->SetShader(instantiateShader);
@@ -247,18 +248,21 @@ int main()
 	ast->SetShader(ourShader);
 	healthPowerUp->SetShader(ourShader);
 	doubleShotsPowerUp->SetShader(ourShader);
-
+	moonModel->SetShader(ourShader);
 	GraphNode* root = new GraphNode();
 	GraphNode* gameRoot = new GraphNode();
 	GraphNode* lightB = new GraphNode(lightBox);
 	GraphNode* pointLightPivot = new GraphNode();
-	GraphNode* ship = new GraphNode(spaceShip, glm::vec2(-2, -0.7), glm::vec2(0, 0.5));
+	GraphNode* ship = new GraphNode(spaceShip, glm::vec2(-1.5, -1), glm::vec2(0.5, 0.5));
 	GraphNode* laserBullet = new GraphNode(bullet, glm::vec2(-0.2, -0.1), glm::vec2(0.2, 0.1));
 	GraphNode* cam = camera;
-	GraphNode* ship2 = new GraphNode(spaceShip2, glm::vec2(-1, -1), glm::vec2(1, 1));
+	GraphNode* ship2 = new GraphNode(spaceShip2, glm::vec2(-0.5, -1), glm::vec2(1, 1));
 	GraphNode* asteroid = new GraphNode(ast);
 	GraphNode* health = new GraphNode(healthPowerUp, glm::vec2(-0.4, -0.4), glm::vec2(0.4, 0.4));
 	GraphNode* doubleShots = new GraphNode(doubleShotsPowerUp, glm::vec2(-0.4, -0.4), glm::vec2(0.4, 0.4));
+	GraphNode* moonPivot = new GraphNode();
+	GraphNode* moon = new GraphNode(moonModel);
+	GraphNode* UFO = new GraphNode(ufo);
 	shared_ptr<GraphNode> graph(gameRoot);
 	root->AddChild(cam);
 	root->AddChild(gameRoot);
@@ -271,7 +275,9 @@ int main()
 	root->AddChild(asteroid);
 	root->AddChild(health);
 	root->AddChild(doubleShots);
-	
+	root->AddChild(moon);
+	root->AddChild(moonPivot);
+	moonPivot->AddChild(UFO);
 	
 	ship->setPosition(-17, 0, 0);
 	ship->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
@@ -297,6 +303,14 @@ int main()
 	health->Scale(glm::vec3(0.045, 0.045, 0.045));
 	health->Active(false);
 
+	moon->setPosition(30, 10, -80);
+	moon->Scale(glm::vec3(0.6, 0.6, 0.6));
+	moonPivot->setPosition(moon->getPosition().x, moon->getPosition().y, moon->getPosition().z);
+
+	UFO->setPosition(45, -8, 0);
+	UFO->Rotate(90.0f, glm::vec3(0, 0, -1));
+	UFO->Scale(glm::vec3(0.05, 0.05, 0.05));
+
 	doubleShots->setPosition(0, 0, -1);
 	doubleShots->Rotate(90.0f, glm::vec3(1, 0, 0));
 	doubleShots->Scale(glm::vec3(0.045, 0.045, 0.045));
@@ -317,7 +331,7 @@ int main()
 	glGenFramebuffers(1, &depthMapFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 
-	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+	const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
 
 	
 	glGenTextures(1, &depthMap);
@@ -386,6 +400,7 @@ int main()
 	// -----------
 	while (!glfwWindowShouldClose(window))
 	{
+		glfwGetWindowSize(window, &SCR_WIDTH, &SCR_HEIGHT);
 		GLfloat currentFrame = (float)glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
@@ -401,8 +416,8 @@ int main()
 		{
 			ImGui::Begin("Hello, world!");
 			ImGui::Text("Pozycja œwiat³a punktowego");
-			ImGui::SliderFloat("x", &x_axis, -10.0f, 10.0f);
-			ImGui::SliderFloat("y", &y_axis, -10.0f, 10.0f);
+			ImGui::SliderFloat("x", &x_axis, -100.0f, 100.0f);
+			ImGui::SliderFloat("y", &y_axis, -100.0f, 100.0f);
 			ImGui::ColorEdit3("Ambient Light", (float*)&lightAmbient); // Edit 3 floats representing a color
 			ImGui::ColorEdit3("Diffuse Light", (float*)&lightDiffuse);
 			ImGui::ColorEdit3("Specular Light", (float*)&lightSpecular);
@@ -461,8 +476,12 @@ int main()
 
 		root->Rotate(-0.05f, glm::vec3(0.0f, 1.0f, 0.0f));
 		lightB->setPosition(x_axis, y_axis, 30.0f);
-		
-		
+		moon->Rotate(-0.03f, glm::vec3(0.0f, 1.0f, 0.0f));
+		moonPivot->Rotate(0.4f, glm::vec3(0.0f, 1.0f, 0.3f));
+		//UFO->setPosition(x_axis, y_axis, 0);
+		spotLightPosition = UFO->GetWorldPosition();
+		spotLightDirection = glm::normalize(moon->GetWorldPosition() - UFO->GetWorldPosition());// +glm::vec3(-0.5, 0, 0);
+
 		glm::mat4 projection = glm::perspective(glm::radians(camera->Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera->GetViewMatrix();
 		lightPosition = lightB->GetWorldPosition();
@@ -479,7 +498,7 @@ int main()
 		glm::mat4 lightProjection(1), lightView(1);
 		
 		float near_plane = -10.0f, far_plane = 100.0f;
-		lightProjection = glm::ortho(-30.0f, 30.0f, -30.0f, 30.0f, near_plane, far_plane);
+		lightProjection = glm::ortho(-100.0f, 100.0f, -80.0f, 80.0f, near_plane, far_plane);
 		lightView = glm::lookAt(WorldLightDirection, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
 		lightSpaceMatrix = lightProjection * lightView;
 
@@ -560,8 +579,6 @@ int main()
 			setPhongShader(ourShader);
 			//setPhongShader(instantiateShader);
 		}
-		root->Draw();
-
 		glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
 		skyBoxShader->use();
 		view = glm::mat4(glm::mat3(camera->GetViewMatrix())); // remove translation from the view matrix
@@ -574,6 +591,10 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 		glDepthFunc(GL_LESS); // set depth function back to default
+		
+		root->Draw();
+
+		
 
 		
 		/*debugDepthQuad->use();
@@ -785,8 +806,8 @@ void setPBRShader(Shader *shader) {
 	shader->setVec3("spotLight[0].position", spotLightPosition);
 	shader->setVec3("spotLight[0].direction", spotLightDirection);
 	shader->setFloat("spotLight[0].cutOff", glm::cos(glm::radians(8.0f)));
-	shader->setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(10.0f)));
-	shader->setVec3("spotLight[0].color", 1.0f, 0.0f, 0.0f);
+	shader->setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(16.0f)));
+	shader->setVec3("spotLight[0].color", 0.0f, 1.0f, 0.1f);
 	shader->setBool("spotLight[0].enabled", spotLightEnabled);
 	shader->setVec3("spotLight[1].position", spotLightPosition1);
 	shader->setVec3("spotLight[1].direction", spotLightDirection1);

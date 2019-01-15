@@ -69,8 +69,8 @@ void main()
     vec3 color = vec3(0);
     color += calculatePointLight(albedo, N, V);
     color += calculateDirLight(albedo, N, V);
-    // for(int i = 0; i < 2; i++)
-    //     color += calculateSpotLight(albedo, N, V, spotLight[i]);
+    for(int i = 0; i < 2; i++)
+        color += calculateSpotLight(albedo, N, V, spotLight[i]);
     color += calculateReflection(N, I);
     color += calculateRefraction(N, I);
     
@@ -97,7 +97,7 @@ vec3 calculateSpotLight(vec3 albedo, vec3 N, vec3 V, SpotLight light)
         vec3 H = normalize(V + L);
 
         float distance    = length(light.position - FragPos);
-        float attenuation = 1.0 / (distance * distance);
+        float attenuation = 1.0 / (0.002 * (distance * distance));
         vec3 radiance     = light.color * attenuation;        
 
         // cook-torrance brdf

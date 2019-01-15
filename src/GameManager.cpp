@@ -418,7 +418,7 @@ void GameManager::EnemyShooting()
 		if (time >= enemy->GetShootingCooldown() && enemy->IsActive())
 		{
 			enemy->SetShootingCooldown((float)glfwGetTime() + static_cast <float> (rand()) / static_cast <float> (RAND_MAX) + 1.0f);
-			if( enemy->getPosition().x >= player->getPosition().x + 1)
+			if( enemy->getPosition().x >= player->getPosition().x + 2.5)
 			{
 				glm::vec3 dir = glm::normalize(player->getPosition() - enemy->getPosition());
 
