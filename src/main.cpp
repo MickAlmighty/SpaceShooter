@@ -131,7 +131,6 @@ unsigned int depthMap;
 
 float horizontalDirection = 0.0f;
 float verticalDirection = 0.0f;
-float spaceshipSpeed = 0.2f;
 float spacebarPushed = false;
 float enterPushed = false;
 int main()
@@ -181,7 +180,7 @@ int main()
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
-	//glfwSwapInterval(1); // Enable vsync
+	glfwSwapInterval(0); // Enable vsync
 	// tell GLFW to capture our mouse
 	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	
@@ -295,6 +294,8 @@ int main()
 	root->AddChild(moonPivot);
 	moonPivot->AddChild(UFO);
 	
+	lightB->setPosition(x_axis, y_axis, 30.0f);
+
 	ship->setPosition(-17, 0, 0);
 	ship->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
 	ship->Rotate(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -368,7 +369,7 @@ int main()
 		return false;
 
 ///////////////////////////////////////////////
-	const unsigned int CUBEMAP_SHADOW_WIDTH = 256, CUBEMAP_SHADOW_HEIGHT = 256;
+	const unsigned int CUBEMAP_SHADOW_WIDTH = 384, CUBEMAP_SHADOW_HEIGHT = 384;
 	unsigned int depthCubemap;
 	glGenTextures(1, &depthCubemap);
 	unsigned int depthCubemapFBO;
@@ -420,6 +421,7 @@ int main()
 		GLfloat currentFrame = (float)glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
+		cout << "Frame time: " << deltaTime << endl;
 		// input
 		// -----
 		processInput(window);
@@ -490,10 +492,10 @@ int main()
 			ImGui::End();
 		}
 
-		root->Rotate(-0.05f, glm::vec3(0.0f, 1.0f, 0.0f));
-		lightB->setPosition(x_axis, y_axis, 30.0f);
-		moon->Rotate(-0.03f, glm::vec3(0.0f, 1.0f, 0.0f));
-		moonPivot->Rotate(0.4f, glm::vec3(0.0f, 1.0f, 0.3f));
+		root->Rotate(-1.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
+		
+		moon->Rotate(-3.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
+		moonPivot->Rotate(14.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.3f));
 		spotLightPosition = UFO->GetWorldPosition();
 		spotLightDirection = glm::normalize(moon->GetWorldPosition() - UFO->GetWorldPosition());// +glm::vec3(-0.5, 0, 0);
 
@@ -551,18 +553,18 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		//point light shadow map drawing
-		glViewport(0, 0, CUBEMAP_SHADOW_WIDTH, CUBEMAP_SHADOW_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		cubemapDepthShader->use();
-		root->SetShader(cubemapDepthShader.get());
-		for (unsigned int i = 0; i < 6; ++i)
-			cubemapDepthShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
-		cubemapDepthShader->setVec3("lightPos", lightPosition);
-		cubemapDepthShader->setFloat("far_plane", far_plan);
-		// 1. wygeneruj mapê g³êbokoœci
-		root->Draw();
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		//glViewport(0, 0, CUBEMAP_SHADOW_WIDTH, CUBEMAP_SHADOW_HEIGHT);
+		//glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		//cubemapDepthShader->use();
+		//root->SetShader(cubemapDepthShader.get());
+		//for (unsigned int i = 0; i < 6; ++i)
+		//	cubemapDepthShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+		//cubemapDepthShader->setVec3("lightPos", lightPosition);
+		//cubemapDepthShader->setFloat("far_plane", far_plan);
+		//// 1. wygeneruj mapê g³êbokoœci
+		//root->Draw();
+		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		// 2. normalnie wyrenderuj scenê korzystaj¹c z mapy g³êbokoœci (cubemap)
 		
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
@@ -627,7 +629,7 @@ int main()
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
+		gameManager.SetFrameTime(deltaTime);
 		gameManager.spacebarPushed(spacebarPushed);
 		gameManager.enterPushed(enterPushed);
 		gameManager.GameOps();
@@ -708,19 +710,19 @@ void processInput(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
 		glfwSetCursorPosCallback(window, mouse_callback);*/
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-		verticalDirection = spaceshipSpeed;
+		verticalDirection = 1.0f;
 		horizontalDirection = 0.0f;
 	}	
 	else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-		verticalDirection = -spaceshipSpeed;
+		verticalDirection = -1.0f;
 		horizontalDirection = 0.0f;
 	}	
 	else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-		horizontalDirection = -spaceshipSpeed;
+		horizontalDirection = -1.0f;
 		verticalDirection = 0.0f;
 	}
 	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-		horizontalDirection = spaceshipSpeed;
+		horizontalDirection = 1.0f;
 		verticalDirection = 0.0f;
 	}
 	else {

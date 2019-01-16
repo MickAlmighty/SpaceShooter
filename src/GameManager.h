@@ -25,14 +25,17 @@ private:
 	float COOLDOWN = 0;
 	float ASTEROID_COOLDOWN = 0;
 	float ENEMY_COOLDOWN = 1.0f;
-	float ENEMY_SPEED = 0.15f;
+	float PLAYER_SPEED = 12.0f;
+	float ENEMY_SPEED = 8.0f;
+	const float BULLET_SPEED = 15.0f;
 	float HEALTH_POWERUP_COOLDOWN = 10;
 	float DOUBLE_SHOTS_POWERUP_COOLDOWN = 5;
 	int PLAYER_LIFES = 3;
 	int SCORE = 0;
+	float FRAME_TIME = 0.016f;
 	bool gameInit = true;
 
-	const float BULLET_SPEED = 0.4f;
+	
 	NodePtr sceneGraph;
 	NodePtr player;
 	NodePtr enemyShip;
@@ -85,6 +88,7 @@ public:
 	void enterPushed(bool);
 	void GameOps();
 	void ResetGame();
+	void SetFrameTime(float frameTime);
 	
 };
 #endif // !GAMEMANAGER_H

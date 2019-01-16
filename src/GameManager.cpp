@@ -85,6 +85,11 @@ void GameManager::ResetGame()
 	gameInit = false;
 }
 
+void GameManager::SetFrameTime(float frameTime)
+{
+	FRAME_TIME = frameTime;
+}
+
 void GameManager::setPlayer(GraphNode* playerPtr)
 {
 	player = shared_ptr<GraphNode>(playerPtr);
@@ -197,7 +202,7 @@ void GameManager::spawnAsteroid()
 		float z = -30.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (-5.0f - (-30.0f))));
 		NodePtr tmp = std::make_shared<GraphNode>(asteroid.get());
 		tmp->setPosition(50.0f, y, z);
-		tmp->SetSpeed(static_cast <float> ((rand()) / static_cast <float> (RAND_MAX))/5);
+		tmp->SetSpeed(static_cast <float> (((rand()) / static_cast <float> (RAND_MAX)))* 6.5f);
 		float i = static_cast <float> ((rand()) / static_cast <float> (RAND_MAX)) + 1;
 		float j = -1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (1.0f - (-1.0f))));
 		j /= 2;
@@ -218,7 +223,7 @@ void GameManager::spawnPowerUps(float& cooldown, vector<NodePtr>& powerUps, Node
 		float y = -11.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (10.0f - (-11.0f))));
 		
 		tmp->setPosition(25.0f, y, -0.5f);
-		tmp->SetSpeed(0.2f);
+		tmp->SetSpeed(9.0f);
 		tmp->SetDirection(glm::vec3(-1, 0, 0));
 		powerUps.push_back(tmp);
 		sceneGraph->AddChild(tmp.get());
@@ -228,10 +233,10 @@ void GameManager::spawnPowerUps(float& cooldown, vector<NodePtr>& powerUps, Node
 void GameManager::movePlayer()
 {
 	glm::vec3 shipPosition = player->getPosition();
-	float xVal = shipPosition.x + *horizontalDirection;
-	float yVal = shipPosition.y + *verticalDirection;
+	float xVal = shipPosition.x + *horizontalDirection * PLAYER_SPEED * FRAME_TIME;
+	float yVal = shipPosition.y + *verticalDirection * PLAYER_SPEED * FRAME_TIME;
 	if (xVal >= -19.0f && xVal <= 16.0f && yVal <= 11.0f && yVal >= -12.0f) {
-		player->setPosition(xVal, shipPosition.y + *verticalDirection, 0.0f);
+		player->setPosition(xVal, yVal, 0.0f);
 	}
 }
 
@@ -239,9 +244,9 @@ void GameManager::moveObjects(vector<NodePtr>& objectContainer)
 {
 	for (NodePtr& gameObject : objectContainer) {
 		glm::vec3 gameObjectPos = gameObject->getPosition();
-
-		gameObject->setPosition(gameObjectPos.x + gameObject->GetDirection().x * gameObject->GetSpeed(),
-			gameObjectPos.y + gameObject->GetDirection().y * gameObject->GetSpeed(), gameObjectPos.z);
+		float x = gameObjectPos.x + gameObject->GetDirection().x * gameObject->GetSpeed() * FRAME_TIME;
+		float y = gameObjectPos.y + gameObject->GetDirection().y * gameObject->GetSpeed() * FRAME_TIME;
+		gameObject->setPosition( x, y, gameObjectPos.z);
 	}
 }
 

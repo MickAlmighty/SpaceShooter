@@ -46,6 +46,15 @@ uniform SpotLight spotLight[2];
 
 const float PI = 3.14159265359;
 
+vec3 gridSamplingDisk[20] = vec3[]
+(
+   vec3(1, 1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1, 1,  1), 
+   vec3(1, 1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+   vec3(1, 1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1, 1,  0),
+   vec3(1, 0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1, 0, -1),
+   vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
+);
+
 float DistributionGGX(vec3 N, vec3 H, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
@@ -57,6 +66,8 @@ vec3 calculateReflection(vec3 N, vec3 I);
 vec3 calculateRefraction(vec3 N, vec3 I);
 float ShadowCalculation(vec4 fragPosLightSpace, vec3 Normal, vec3 lightDir);
 float PointLightShadowCalculation(vec3 fragPos);
+
+
 
 void main()
 {
@@ -169,7 +180,7 @@ vec3 calculatePointLight(vec3 albedo, vec3 N, vec3 V)
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;  
 
         vec3 ambient = vec3(0.03) * albedo * ao;
-        vec3 color = ambient + Lo * (1 - PointLightShadowCalculation(FragPos));
+        vec3 color = ambient + Lo;// * (1 - PointLightShadowCalculation(FragPos));
         return color;
     }
     return vec3(0);
@@ -302,12 +313,42 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 Normal, vec3 lightDir){
 float PointLightShadowCalculation(vec3 fragPos)
 {
     vec3 fragToLight = fragPos - pointLight.position; 
-    float closestDepth = texture(depthCubemap, fragToLight).r;
-    closestDepth *= far_plane;  
-    float currentDepth = length(fragToLight);
-    // now test for shadows
-    float bias = 0.05; 
-    float shadow = currentDepth -  bias > closestDepth ? 1.0 : 0.0;
+    // float closestDepth = texture(depthCubemap, fragToLight).r;
+    // closestDepth *= far_plane;  
+     float currentDepth = length(fragToLight);
+    // // now test for shadows
+    // float shadow  = 0.0;
+    // float bias    = 0.05; 
+    // float samples = 4.0;
+    // float offset  = 0.1;
+    // for(float x = -offset; x < offset; x += offset / (samples * 0.5))
+    // {
+    //     for(float y = -offset; y < offset; y += offset / (samples * 0.5))
+    //     {
+    //         for(float z = -offset; z < offset; z += offset / (samples * 0.5))
+    //         {
+    //             float closestDepth = texture(depthCubemap, fragToLight + vec3(x, y, z)).r; 
+    //             closestDepth *= far_plane;   // Undo mapping [0;1]
+    //             if(currentDepth - bias > closestDepth)
+    //                 shadow += 1.0;
+    //         }
+    //     }
+    // }
+    // shadow /= (samples * samples * samples);
+    float shadow = 0.0;
+    float bias = 0.15;
+    int samples = 20;
+    float viewDistance = length(camPos - fragPos);
+    float diskRadius = (1.0 + (viewDistance / far_plane)) / 25.0;
+    for(int i = 0; i < samples; ++i)
+    {
+        float closestDepth = texture(depthCubemap, fragToLight + gridSamplingDisk[i] * diskRadius).r;
+        closestDepth *= far_plane;   // undo mapping [0;1]
+        if(currentDepth - bias > closestDepth)
+            shadow += 1.0;
+    }
+    shadow /= float(samples);
+
     //FragColor = vec4(vec3(closestDepth / far_plane), 1.0);
     return shadow;
 }
