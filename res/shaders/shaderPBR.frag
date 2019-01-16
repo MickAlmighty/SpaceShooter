@@ -6,9 +6,9 @@ in vec3 Normal;
 in vec4 FragPosLightSpace;
 
 uniform sampler2D texture_diffuse1;
-uniform samplerCube skybox;
 uniform sampler2D shadowMap;
-uniform samplerCube depthMap;
+uniform samplerCube skybox;
+uniform samplerCube depthCubemap;
 
 uniform float metallic;
 uniform float roughness;
@@ -146,7 +146,7 @@ vec3 calculatePointLight(vec3 albedo, vec3 N, vec3 V)
         vec3 L = normalize(pointLight.position - FragPos);
         vec3 H = normalize(V + L);
         float distance    = length(pointLight.position - FragPos);
-        float attenuation = 1.0 / (distance * distance);
+        float attenuation = 1.0 / (0.001 * (distance * distance));
         vec3 radiance     = pointLight.color * attenuation;        
 
         // cook-torrance brdf
@@ -169,7 +169,7 @@ vec3 calculatePointLight(vec3 albedo, vec3 N, vec3 V)
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;  
 
         vec3 ambient = vec3(0.03) * albedo * ao;
-        vec3 color = ambient + Lo;// * PointLightShadowCalculation(FragPos);
+        vec3 color = ambient + Lo * (1 - PointLightShadowCalculation(FragPos));
         return color;
     }
     return vec3(0);
@@ -302,13 +302,12 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 Normal, vec3 lightDir){
 float PointLightShadowCalculation(vec3 fragPos)
 {
     vec3 fragToLight = fragPos - pointLight.position; 
-    float closestDepth = texture(depthMap, fragToLight).r;
+    float closestDepth = texture(depthCubemap, fragToLight).r;
     closestDepth *= far_plane;  
     float currentDepth = length(fragToLight);
-        // now test for shadows
-        float bias = 0.05; 
-        float shadow = currentDepth -  bias > closestDepth ? 1.0 : 0.0;
-
-        return shadow;
-    return 0;
+    // now test for shadows
+    float bias = 0.05; 
+    float shadow = currentDepth -  bias > closestDepth ? 1.0 : 0.0;
+    //FragColor = vec4(vec3(closestDepth / far_plane), 1.0);
+    return shadow;
 }

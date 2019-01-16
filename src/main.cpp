@@ -21,9 +21,12 @@
 #include <cstdlib>
 #include <ctime>
 
+extern "C" {
+	_declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+}
 
-
-
+void APIENTRY glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity,
+	GLsizei length, const GLchar *message, const void *userParam);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow *window);
@@ -116,7 +119,7 @@ float slPosX = -1.3f, slPosY = -0.84f, slPosZ = 0.84f;
 float slPosX1 = 1.485f, slPosY1 = -0.89f, slPosZ1 = 1.683f;
 glm::vec3 spotLightDirection(0.5f, 0.02f, -0.34f);
 glm::vec3 spotLightDirection1(-0.89f, -0.792f, -1.683f);
-float reflectionStrength = 0.0f, refraction = 0.0f, dirLightStrenght = 0.35f;
+float reflectionStrength = 0.0f, refraction = 0.0f, dirLightStrenght = 0.2f;
 bool dirLightEnabled = true, spotLightEnabled = true, spotLightEnabled1 = true, pointLightEnabled = true;
 glm::vec3 lightPosition;
 glm::vec3 spotLightPosition;
@@ -136,15 +139,16 @@ int main()
 	// glfw: initialize and configure
 	// ------------------------------
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+	
 	// Setup window
 	glfwSetErrorCallback(glfw_error_callback);
 	if (!glfwInit())
 		return 1;
-
+	
 	// Decide GL+GLSL versions
 #if __APPLE__
 	// GL 3.2 + GLSL 150
@@ -161,6 +165,8 @@ int main()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 #endif
+	
+
 
 // glfw window creation
 // --------------------
@@ -175,10 +181,11 @@ int main()
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
-	glfwSwapInterval(1); // Enable vsync
+	//glfwSwapInterval(1); // Enable vsync
 	// tell GLFW to capture our mouse
 	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
+	
+	
 	// glad: load all OpenGL function pointers
 	// ---------------------------------------
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -186,7 +193,15 @@ int main()
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
-
+	GLint flags; glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+	if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+	{
+		cout << "Inicjacja kontekstu debugowania zakonczona pomyœlnie" << endl;
+		glEnable(GL_DEBUG_OUTPUT);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		glDebugMessageCallback(glDebugOutput, nullptr);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+	}
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -199,6 +214,7 @@ int main()
 	// Setup style
 	ImGui::StyleColorsDark();
 
+	
 	// configure global opengl state
 	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
@@ -299,7 +315,7 @@ int main()
 	laserBullet->Active(false);
 	cam->setPosition(0.0f, 0.0f, 30.0f);
 
-	health->setPosition(0, 0, -1);
+	health->setPosition(0, 0, 0);
 	health->Scale(glm::vec3(0.045, 0.045, 0.045));
 	health->Active(false);
 
@@ -311,7 +327,7 @@ int main()
 	UFO->Rotate(90.0f, glm::vec3(0, 0, -1));
 	UFO->Scale(glm::vec3(0.05, 0.05, 0.05));
 
-	doubleShots->setPosition(0, 0, -1);
+	doubleShots->setPosition(0, 0, 0);
 	doubleShots->Rotate(90.0f, glm::vec3(1, 0, 0));
 	doubleShots->Scale(glm::vec3(0.045, 0.045, 0.045));
 	doubleShots->Active(false);
@@ -326,7 +342,7 @@ int main()
 	gameManager.SetAsteroid(asteroid);
 	gameManager.SetHealthPowerUp(health);
 	gameManager.SetDoubleShotsPowerUp(doubleShots);
-
+	
 	unsigned int depthMapFBO;
 	glGenFramebuffers(1, &depthMapFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
@@ -347,38 +363,36 @@ int main()
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	//glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		return false;
 
 ///////////////////////////////////////////////
-
+	const unsigned int CUBEMAP_SHADOW_WIDTH = 256, CUBEMAP_SHADOW_HEIGHT = 256;
 	unsigned int depthCubemap;
 	glGenTextures(1, &depthCubemap);
-	unsigned int depthMapFBO1;
-	glGenFramebuffers(1, &depthMapFBO1);
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO1);
+	unsigned int depthCubemapFBO;
+	glGenFramebuffers(1, &depthCubemapFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
 
 	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
 	for (unsigned int i = 0; i < 6; ++i)
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT,
-			SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+			CUBEMAP_SHADOW_WIDTH, CUBEMAP_SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO1);
+	//glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		return false;
-
-	float aspect = (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT;
-	glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, 1.0f, 25.0f);
 ///////////////////////////////////////////////
 	glm::mat4 view(1);
 	glm::mat4 projection(1);
@@ -400,6 +414,8 @@ int main()
 	// -----------
 	while (!glfwWindowShouldClose(window))
 	{
+		
+
 		glfwGetWindowSize(window, &SCR_WIDTH, &SCR_HEIGHT);
 		GLfloat currentFrame = (float)glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
@@ -478,13 +494,11 @@ int main()
 		lightB->setPosition(x_axis, y_axis, 30.0f);
 		moon->Rotate(-0.03f, glm::vec3(0.0f, 1.0f, 0.0f));
 		moonPivot->Rotate(0.4f, glm::vec3(0.0f, 1.0f, 0.3f));
-		//UFO->setPosition(x_axis, y_axis, 0);
 		spotLightPosition = UFO->GetWorldPosition();
 		spotLightDirection = glm::normalize(moon->GetWorldPosition() - UFO->GetWorldPosition());// +glm::vec3(-0.5, 0, 0);
 
 		glm::mat4 projection = glm::perspective(glm::radians(camera->Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera->GetViewMatrix();
-		lightPosition = lightB->GetWorldPosition();
 
 		glm::mat4 DirLightPosition(1);
 		DirLightPosition[3][0] = lightDirection.x;
@@ -503,6 +517,12 @@ int main()
 		lightSpaceMatrix = lightProjection * lightView;
 
 
+
+		float aspect = (float)CUBEMAP_SHADOW_WIDTH / (float)CUBEMAP_SHADOW_HEIGHT;
+		float near_plan = 5.0f, far_plan = 100.0f;
+		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near_plan, far_plan);
+		
+		lightPosition = lightB->GetWorldPosition();
 		std::vector<glm::mat4> shadowTransforms;
 		shadowTransforms.push_back(shadowProj *
 			glm::lookAt(lightPosition, lightPosition + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
@@ -516,9 +536,11 @@ int main()
 			glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
 		shadowTransforms.push_back(shadowProj *
 			glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
+		
+
+		//directional light shadow map drawing
 		depthShader->use();
 		depthShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
-
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 		glClear(GL_DEPTH_BUFFER_BIT);
@@ -526,44 +548,41 @@ int main()
 		root->SetShader(depthShader.get());
 		root->Draw();
 		glCullFace(GL_BACK);
-		
-		//cubemapDepthShader->use();
-		//for (unsigned int i = 0; i < 6; ++i)v
-		//cubemapDepthShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
-		//cubemapDepthShader->setVec3("lightPos", lightPosition);
-		//cubemapDepthShader->setFloat("far_plane", 25.0f);
-		//root->SetShader(cubemapDepthShader.get());
-		//// 1. wygeneruj mapê g³êbokoœci
-		//glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		//glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO1);
-		//glClear(GL_DEPTH_BUFFER_BIT);
-		//root->Draw();
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		//point light shadow map drawing
+		glViewport(0, 0, CUBEMAP_SHADOW_WIDTH, CUBEMAP_SHADOW_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		cubemapDepthShader->use();
+		root->SetShader(cubemapDepthShader.get());
+		for (unsigned int i = 0; i < 6; ++i)
+			cubemapDepthShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+		cubemapDepthShader->setVec3("lightPos", lightPosition);
+		cubemapDepthShader->setFloat("far_plane", far_plan);
+		// 1. wygeneruj mapê g³êbokoœci
+		root->Draw();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		// 2. normalnie wyrenderuj scenê korzystaj¹c z mapy g³êbokoœci (cubemap)
+		
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 
 		root->SetShader(ourShader);
 		ourShader->use();
 		ourShader->setMat4("view", view);
 		ourShader->setMat4("projection", projection);
 		ourShader->setMat4("LightSpaceMatrix", lightSpaceMatrix);
-		ourShader->setFloat("far_plane", 25.0f);
+		ourShader->setFloat("far_plane", far_plan);
 		ourShader->setInt("shadowMap", 1);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
-		ourShader->setInt("depthMap", 2);
+		ourShader->setInt("skybox", 3);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		ourShader->setInt("depthCubemap", 2);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
-
-		
-
-		ourShader2->use();
-		ourShader2->setMat4("view", view);
-		ourShader2->setMat4("projection", projection);
-		ourShader2->setVec3("lightColor", lightDiffuse);
-		ourShader2->setMat4("LightSpaceMatrix", lightSpaceMatrix);
 
 		/*instantiateShader->use();
 		instantiateShader->setMat4("view", view);
@@ -579,6 +598,7 @@ int main()
 			setPhongShader(ourShader);
 			//setPhongShader(instantiateShader);
 		}
+		root->Draw();
 		glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
 		skyBoxShader->use();
 		view = glm::mat4(glm::mat3(camera->GetViewMatrix())); // remove translation from the view matrix
@@ -592,7 +612,7 @@ int main()
 		glBindVertexArray(0);
 		glDepthFunc(GL_LESS); // set depth function back to default
 		
-		root->Draw();
+		
 
 		
 
@@ -853,4 +873,51 @@ void setPhongShader(Shader *shader) {
 	shader->setFloat("spotLight[1].constant", 1.0f);
 	shader->setFloat("spotLight[1].linear", 0.09f);
 	shader->setFloat("spotLight[1].quadratic", 0.032f);
+}
+
+void APIENTRY glDebugOutput(GLenum source,
+	GLenum type,
+	GLuint id,
+	GLenum severity,
+	GLsizei length,
+	const GLchar *message,
+	const void *userParam)
+{
+	// ignore non-significant error/warning codes
+	if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
+
+	std::cout << "---------------" << std::endl;
+	std::cout << "Debug message (" << id << "): " << message << std::endl;
+
+	switch (source)
+	{
+	case GL_DEBUG_SOURCE_API:             std::cout << "Source: API"; break;
+	case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   std::cout << "Source: Window System"; break;
+	case GL_DEBUG_SOURCE_SHADER_COMPILER: std::cout << "Source: Shader Compiler"; break;
+	case GL_DEBUG_SOURCE_THIRD_PARTY:     std::cout << "Source: Third Party"; break;
+	case GL_DEBUG_SOURCE_APPLICATION:     std::cout << "Source: Application"; break;
+	case GL_DEBUG_SOURCE_OTHER:           std::cout << "Source: Other"; break;
+	} std::cout << std::endl;
+
+	switch (type)
+	{
+	case GL_DEBUG_TYPE_ERROR:               std::cout << "Type: Error"; break;
+	case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: std::cout << "Type: Deprecated Behaviour"; break;
+	case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  std::cout << "Type: Undefined Behaviour"; break;
+	case GL_DEBUG_TYPE_PORTABILITY:         std::cout << "Type: Portability"; break;
+	case GL_DEBUG_TYPE_PERFORMANCE:         std::cout << "Type: Performance"; break;
+	case GL_DEBUG_TYPE_MARKER:              std::cout << "Type: Marker"; break;
+	case GL_DEBUG_TYPE_PUSH_GROUP:          std::cout << "Type: Push Group"; break;
+	case GL_DEBUG_TYPE_POP_GROUP:           std::cout << "Type: Pop Group"; break;
+	case GL_DEBUG_TYPE_OTHER:               std::cout << "Type: Other"; break;
+	} std::cout << std::endl;
+
+	switch (severity)
+	{
+	case GL_DEBUG_SEVERITY_HIGH:         std::cout << "Severity: high"; break;
+	case GL_DEBUG_SEVERITY_MEDIUM:       std::cout << "Severity: medium"; break;
+	case GL_DEBUG_SEVERITY_LOW:          std::cout << "Severity: low"; break;
+	case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: notification"; break;
+	} std::cout << std::endl;
+	std::cout << std::endl;
 }
