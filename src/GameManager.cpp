@@ -1,19 +1,21 @@
 #include <GameManager.h>
 #include <GLFW/glfw3.h>
 #include <ctime>
+#include <string>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/vector_angle.hpp>
 #include <sstream>
 
-GameManager::GameManager(NodePtr graph, float* hDir, float* vDir) {
+GameManager::GameManager(NodePtr graph, string path, float* hDir, float* vDir) {
 	sceneGraph = graph;
 	horizontalDirection = hDir;
 	verticalDirection = vDir;
 	spacebar = false;
 	SoundEngine = createIrrKlangDevice();
 	SoundEngine->setSoundVolume((float)0.008);
-	SoundEngine->play2D("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\sounds\\Space Trip.mp3", GL_TRUE);
-	
+	SOUND_PATH = path;
+	string str = SOUND_PATH;
+	SoundEngine->play2D(str.append("Space Trip.mp3").c_str(), GL_TRUE);
 }
 
 GameManager::~GameManager()
@@ -90,6 +92,11 @@ void GameManager::SetFrameTime(float frameTime)
 	FRAME_TIME = frameTime;
 }
 
+//void GameManager::SetSoundPath(string& path)
+//{
+//	GameManager::SOUND_PATH = path;
+//}
+
 void GameManager::setPlayer(GraphNode* playerPtr)
 {
 	player = shared_ptr<GraphNode>(playerPtr);
@@ -165,8 +172,8 @@ void GameManager::addBullet(glm::vec3& position, glm::vec3& direction, GraphNode
 		sceneGraph->AddChild(firstBullet.get());
 		sceneGraph->AddChild(secondBullet.get());
 	}
-	
-	ISound* soundLoaded = SoundEngine->play2D("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\sounds\\Blast.mp3", GL_FALSE, GL_TRUE);
+	string str = SOUND_PATH;
+	ISound* soundLoaded = SoundEngine->play2D(str.append("Blast.mp3").c_str(), GL_FALSE, GL_TRUE);
 	if (soundLoaded) {
 		soundLoaded->setVolume(0.5f);
 		soundLoaded->setIsPaused(false);
@@ -202,7 +209,7 @@ void GameManager::spawnAsteroid()
 		float z = -30.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (-5.0f - (-30.0f))));
 		NodePtr tmp = std::make_shared<GraphNode>(asteroid.get());
 		tmp->setPosition(50.0f, y, z);
-		tmp->SetSpeed(static_cast <float> (((rand()) / static_cast <float> (RAND_MAX)))* 6.5f);
+		tmp->SetSpeed(static_cast <float> (((rand()) / static_cast <float> (RAND_MAX)))* 10.0f);
 		float i = static_cast <float> ((rand()) / static_cast <float> (RAND_MAX)) + 1;
 		float j = -1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (1.0f - (-1.0f))));
 		j /= 2;
@@ -327,7 +334,8 @@ void GameManager::DoCollision()
 		{
 			healtPowerUp->Active(false);
 			PLAYER_LIFES += 1;
-			ISound* soundLoaded = SoundEngine->play2D("C:/Semestr5/PAG/openGL/scrolling-shooter/Build/src/res/sounds/PowerUp.mp3", GL_FALSE, GL_TRUE);
+			string str = SOUND_PATH;
+			ISound* soundLoaded = SoundEngine->play2D(str.append("PowerUp.mp3").c_str(), GL_FALSE, GL_TRUE);
 			if (soundLoaded) {
 				soundLoaded->setVolume(2.0f);
 				soundLoaded->setIsPaused(false);
@@ -345,7 +353,8 @@ void GameManager::DoCollision()
 				SCORE += 20;
 			}
 			WEAPON_MODE = DOUBLE_SHOT;
-			ISound* soundLoaded = SoundEngine->play2D("C:/Semestr5/PAG/openGL/scrolling-shooter/Build/src/res/sounds/PowerUp.mp3", GL_FALSE, GL_TRUE);
+			string str = SOUND_PATH;
+			ISound* soundLoaded = SoundEngine->play2D(str.append("PowerUp.mp3").c_str(), GL_FALSE, GL_TRUE);
 			if (soundLoaded) {
 				soundLoaded->setVolume(2.0f);
 				soundLoaded->setIsPaused(false);
@@ -360,7 +369,8 @@ void GameManager::DoCollision()
 			{
 				bullet->Active(false);
 				enemy->Active(false);
-				ISound* soundLoaded = SoundEngine->play2D("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\sounds\\Explosion.mp3", GL_FALSE, GL_TRUE);
+				string str = SOUND_PATH;
+				ISound* soundLoaded = SoundEngine->play2D(str.append("Explosion.mp3").c_str(), GL_FALSE, GL_TRUE);
 				if (soundLoaded) {
 					soundLoaded->setVolume(0.5f);
 					soundLoaded->setIsPaused(false);
@@ -377,7 +387,8 @@ void GameManager::DoCollision()
 
 			PLAYER_LIFES -= 1;
 			WEAPON_MODE = SINGLE_SHOT;
-			ISound* soundLoaded = SoundEngine->play2D("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\sounds\\Explosion.mp3", GL_FALSE, GL_TRUE);
+			string str = SOUND_PATH;
+			ISound* soundLoaded = SoundEngine->play2D(str.append("Explosion.mp3").c_str(), GL_FALSE, GL_TRUE);
 			if (soundLoaded) {
 				soundLoaded->setVolume(0.5f);
 				soundLoaded->setIsPaused(false);

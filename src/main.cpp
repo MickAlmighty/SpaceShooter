@@ -1,4 +1,4 @@
-#include "imgui.h"
+ï»¿#include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <glad/glad.h>
@@ -21,9 +21,10 @@
 #include <cstdlib>
 #include <ctime>
 
-extern "C" {
-	_declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
-}
+
+//extern "C" {
+//	_declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+//}
 
 void APIENTRY glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity,
 	GLsizei length, const GLchar *message, const void *userParam);
@@ -33,18 +34,17 @@ void processInput(GLFWwindow *window);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 unsigned int loadCubemap(vector<std::string> faces);
 void setPBRShader(Shader *shader);
-void setPhongShader(Shader *shader);
 void renderQuad();
 static void glfw_error_callback(int error, const char* description)
 {
-    fprintf(stderr, "Glfw Error %d: %s\n", error, description);
+	fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
 // settings
 int SCR_WIDTH = 1280;
 int SCR_HEIGHT = 720;
 
-GLfloat deltaTime = 0.0f; // Czas pomiêdzy obecn¹ i poprzedni¹ klatk¹  
+GLfloat deltaTime = 0.0f; // Czas pomiï¿½dzy obecnï¿½ i poprzedniï¿½ klatkï¿½  
 GLfloat lastFrame = 0.0f; // Czas ostatniej ramki
 bool firstMouse = true;
 
@@ -52,15 +52,7 @@ Camera* camera = new Camera(glm::vec3(0.0f, 0.0f, 30.0f));
 GLfloat lastX = SCR_WIDTH / 2.0f;
 GLfloat lastY = SCR_HEIGHT / 2.0f;
 
-vector<std::string> faces
-{
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\cubemaps\\galaxy\\skybox4X+.png",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\cubemaps\\galaxy\\skybox4X-.png",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\cubemaps\\galaxy\\skybox4Y+.png",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\cubemaps\\galaxy\\skybox4Y-.png",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\cubemaps\\galaxy\\skybox4Z+.png",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\cubemaps\\galaxy\\skybox4Z-.png"
-};
+
 //
 float skyboxVertices[] = {
 	// positions          
@@ -108,18 +100,14 @@ float skyboxVertices[] = {
 };
 
 bool isWireframeModeActive = false;
-float x_axis = 10.0f;
-float y_axis = 10.0f;
-float metallines = 0.2f, roughness = 0.229f, ao = 0.25f;
+
 glm::vec3 lightAmbient(1.0f, 1.0f, 1.0f);
-glm::vec3 lightDiffuse(0.3f, 0.2f, 0.8f);
+glm::vec3 lightDiffuse(0.5f, 0.4f, 0.8f);
 glm::vec3 lightSpecular(1.0f, 1.0f, 1.0f);
 glm::vec3 lightDirection(-5.16f, 1.05f, 8.082f);
-float slPosX = -1.3f, slPosY = -0.84f, slPosZ = 0.84f;
-float slPosX1 = 1.485f, slPosY1 = -0.89f, slPosZ1 = 1.683f;
 glm::vec3 spotLightDirection(0.5f, 0.02f, -0.34f);
 glm::vec3 spotLightDirection1(-0.89f, -0.792f, -1.683f);
-float reflectionStrength = 0.0f, refraction = 0.0f, dirLightStrenght = 0.2f;
+float dirLightStrenght = 0.2f;
 bool dirLightEnabled = true, spotLightEnabled = true, spotLightEnabled1 = true, pointLightEnabled = true;
 glm::vec3 lightPosition;
 glm::vec3 spotLightPosition;
@@ -133,6 +121,26 @@ float horizontalDirection = 0.0f;
 float verticalDirection = 0.0f;
 float spacebarPushed = false;
 float enterPushed = false;
+
+string getPathWin32() {
+	char myPath[_MAX_PATH + 1];
+	GetModuleFileName(NULL, myPath, _MAX_PATH);
+	string path = myPath;
+	std::size_t found = path.find("src");
+	path = path.substr(0, found + 3);
+	return path;
+}
+
+vector<std::string> faces
+{
+	getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4X+.png"),
+	getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4X-.png"),
+	getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4Y+.png"),
+	getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4Y-.png"),
+	getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4Z+.png"),
+	getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4Z-.png")
+};
+
 int main()
 {
 	// glfw: initialize and configure
@@ -142,12 +150,12 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-	
+
 	// Setup window
 	glfwSetErrorCallback(glfw_error_callback);
 	if (!glfwInit())
 		return 1;
-	
+
 	// Decide GL+GLSL versions
 #if __APPLE__
 	// GL 3.2 + GLSL 150
@@ -164,7 +172,7 @@ int main()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 #endif
-	
+
 
 
 // glfw window creation
@@ -183,8 +191,8 @@ int main()
 	glfwSwapInterval(0); // Enable vsync
 	// tell GLFW to capture our mouse
 	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	
-	
+
+
 	// glad: load all OpenGL function pointers
 	// ---------------------------------------
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -195,7 +203,7 @@ int main()
 	GLint flags; glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
 	if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
 	{
-		cout << "Inicjacja kontekstu debugowania zakonczona pomyœlnie" << endl;
+		cout << "Inicjalizacja kontekstu debugowania zakonczona pomyslnie" << endl;
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(glDebugOutput, nullptr);
@@ -213,7 +221,7 @@ int main()
 	// Setup style
 	ImGui::StyleColorsDark();
 
-	
+
 	// configure global opengl state
 	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
@@ -224,46 +232,49 @@ int main()
 	srand(static_cast <unsigned> (time(0)));
 	// build and compile our shader zprogram
 	// ------------------------------------
-	Shader* ourShader = new Shader("C:/Semestr5/PAG/openGL/scrolling-shooter/res/shaders/shader.vs", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shaderPBR.frag");
+	shared_ptr<Shader> ourShader = std::make_shared<Shader>(
+		getPathWin32().append("/res/shaders/shader.vs").c_str(),
+		getPathWin32().append("\\res\\shaders\\shaderPBR.frag").c_str());
 	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.fs");
 
-	//Poni¿ej shadery z obliczeniami w vertex shaderze
-	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\PBRshader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\PBRshader.frag");
-	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\gouraud.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\gouraud.frag");
+	shared_ptr<Shader> skyBoxShader = std::make_shared<Shader>(
+		getPathWin32().append("\\res\\shaders\\skybox.vert").c_str(),
+		getPathWin32().append("\\res\\shaders\\skybox.frag").c_str());
+	shared_ptr<Shader>textShader = std::make_shared<Shader>(
+		getPathWin32().append("\\res\\shaders\\text.vert").c_str(),
+		getPathWin32().append("\\res\\shaders\\text.frag").c_str());
+	shared_ptr<Shader> depthShader = std::make_shared<Shader>(
+		getPathWin32().append("\\res\\shaders\\depthShader.vert").c_str(),
+		getPathWin32().append("\\res\\shaders\\depthShader.frag").c_str());
 
-	Shader* ourShader2 = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shader2.fs");
-	Shader* skyBoxShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\skybox.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\skybox.frag");
-	//Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\shaderPBR.frag");
-	Shader* textShader = new Shader("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\text.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\text.frag");
-	shared_ptr<Shader> depthShader = std::make_shared<Shader>("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\depthShader.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\depthShader.frag");
-	shared_ptr<Shader> debugDepthQuad = std::make_shared<Shader>("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\debugDepth.vert", "C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\debugDepth.frag");
+	shared_ptr<Shader> debugDepthQuad = std::make_shared<Shader>(
+		getPathWin32().append("\\res\\shaders\\debugDepth.vert").c_str(),
+		getPathWin32().append("\\res\\shaders\\debugDepth.frag").c_str());
+
 	shared_ptr<Shader> cubemapDepthShader = std::make_shared<Shader>(
-		"C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\cubemapDepth.vert",
-		"C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\cubemapDepth.frag",
-		"C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\shaders\\cubemapDepth.gs");
+		getPathWin32().append("\\res\\shaders\\cubemapDepth.vert").c_str(),
+		getPathWin32().append("\\res\\shaders\\cubemapDepth.frag").c_str(),
+		getPathWin32().append("\\res\\shaders\\cubemapDepth.gs").c_str());
 	bool PBR = true;
 
-	Model* lightBox = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\lightBox\\LightBox.fbx");
-	Model* rock = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\rock\\rock.obj");
-	Model* spaceShip = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\spaceship\\Wraith Raider Starship.obj", 0.25f, 0.75f, 0.386f);
-	Model* bullet = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\bullet\\bullet.obj", 1.0f, 0.0f, 0.121f);
-	//Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\x-wing\\ship.obj");
-	Model* spaceShip2 = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\enemy_spaceship\\Wraith Raider Starship.obj", 0.25f, 0.75f, 0.386f);
-	Model* ast = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\res\\models\\asteroida\\Asteroid.obj", 0.11f, 0.129f, 0.49f);
-	Model* healthPowerUp = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\Build\\src\\res\\models\\powerups\\health\\health.obj", 0.11f, 0.129f, 0.49f);
-	Model* doubleShotsPowerUp = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\Build\\src\\res\\models\\powerups\\doubleShooting\\doubleShots.obj", 0.11f, 0.129f, 0.49f);
-	Model* moonModel = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\Build\\src\\res\\models\\moon\\moon.obj", 0.11f, 0.129f, 0.49f);
-	Model* ufo = new Model("C:\\Semestr5\\PAG\\openGL\\scrolling-shooter\\Build\\src\\res\\models\\ufo\\Low_poly_UFO.obj");
-
-	lightBox->SetShader(ourShader2);
-	//rock->SetShader(instantiateShader);
-	spaceShip->SetShader(ourShader);
-	spaceShip2->SetShader(ourShader);
-	bullet->SetShader(ourShader);
-	ast->SetShader(ourShader);
-	healthPowerUp->SetShader(ourShader);
-	doubleShotsPowerUp->SetShader(ourShader);
-	moonModel->SetShader(ourShader);
+	Model* lightBox = new Model(getPathWin32().append("\\res\\models\\lightBox\\LightBox.fbx"));
+	Model* spaceShip = new Model(getPathWin32().append("\\res\\models\\spaceship\\Wraith Raider Starship.obj"), 0.25f, 0.75f, 0.386f);
+	Model* bullet = new Model(getPathWin32().append("\\res\\models\\bullet\\bullet.obj"), 1.0f, 0.0f, 0.121f);
+	Model* spaceShip2 = new Model(getPathWin32().append("\\res\\models\\enemy_spaceship\\Wraith Raider Starship.obj"), 0.25f, 0.75f, 0.386f);
+	Model* ast = new Model(getPathWin32().append("\\res\\models\\asteroida\\Asteroid.obj"), 0.11f, 0.129f, 0.49f, 0.4f);
+	Model* healthPowerUp = new Model(getPathWin32().append("\\res\\models\\powerups\\health\\health.obj"), 0.11f, 0.129f, 0.49f);
+	Model* doubleShotsPowerUp = new Model(getPathWin32().append("\\res\\models\\powerups\\doubleShooting\\doubleShots.obj"), 0.11f, 0.129f, 0.49f);
+	Model* moonModel = new Model(getPathWin32().append("\\res\\models\\moon\\moon.obj"), 0.11f, 0.129f, 0.49f);
+	Model* ufo = new Model(getPathWin32().append("\\res\\models\\ufo\\Low_poly_UFO.obj"));
+	//
+	lightBox->SetShader(ourShader.get());
+	spaceShip->SetShader(ourShader.get());
+	spaceShip2->SetShader(ourShader.get());
+	bullet->SetShader(ourShader.get());
+	ast->SetShader(ourShader.get());
+	healthPowerUp->SetShader(ourShader.get());
+	doubleShotsPowerUp->SetShader(ourShader.get());
+	moonModel->SetShader(ourShader.get());
 	GraphNode* root = new GraphNode();
 	GraphNode* gameRoot = new GraphNode();
 	GraphNode* lightB = new GraphNode(lightBox);
@@ -293,8 +304,8 @@ int main()
 	root->AddChild(moon);
 	root->AddChild(moonPivot);
 	moonPivot->AddChild(UFO);
-	
-	lightB->setPosition(x_axis, y_axis, 30.0f);
+
+	lightB->setPosition(10.0f, 10.0f, 30.0f);
 
 	ship->setPosition(-17, 0, 0);
 	ship->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
@@ -332,10 +343,11 @@ int main()
 	doubleShots->Rotate(90.0f, glm::vec3(1, 0, 0));
 	doubleShots->Scale(glm::vec3(0.045, 0.045, 0.045));
 	doubleShots->Active(false);
-	shared_ptr<TextRenderer> textPtr = std::make_shared<TextRenderer>(SCR_WIDTH, SCR_HEIGHT, textShader);
-	textPtr.get()->Load("C:/Semestr5/PAG/openGL/scrolling-shooter/res/fonts/MKStencilsansBlack.ttf", 30);
+	shared_ptr<TextRenderer> textPtr = std::make_shared<TextRenderer>(SCR_WIDTH, SCR_HEIGHT, textShader.get());
+	textPtr.get()->Load(getPathWin32().append("\\res\\fonts\\MKStencilsansBlack.ttf"), 30);
 
-	GameManager gameManager(graph, &horizontalDirection, &verticalDirection);
+	//GameManager::SetSoundPath(getPathWin32().append("\\res\\sounds\\"));
+	GameManager gameManager(graph, getPathWin32().append("\\res\\sounds\\"), &horizontalDirection, &verticalDirection);
 	gameManager.setPlayer(ship);
 	gameManager.setBullet(laserBullet);
 	gameManager.setEnemyShip(ship2);
@@ -343,14 +355,14 @@ int main()
 	gameManager.SetAsteroid(asteroid);
 	gameManager.SetHealthPowerUp(health);
 	gameManager.SetDoubleShotsPowerUp(doubleShots);
-	
+
 	unsigned int depthMapFBO;
 	glGenFramebuffers(1, &depthMapFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 
 	const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
 
-	
+
 	glGenTextures(1, &depthMap);
 	glBindTexture(GL_TEXTURE_2D, depthMap);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
@@ -360,7 +372,7 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	
+
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
@@ -368,7 +380,7 @@ int main()
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		return false;
 
-///////////////////////////////////////////////
+	///////////////////////////////////////////////
 	const unsigned int CUBEMAP_SHADOW_WIDTH = 384, CUBEMAP_SHADOW_HEIGHT = 384;
 	unsigned int depthCubemap;
 	glGenTextures(1, &depthCubemap);
@@ -390,14 +402,14 @@ int main()
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
-	
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		return false;
-///////////////////////////////////////////////
+	///////////////////////////////////////////////
 	glm::mat4 view(1);
 	glm::mat4 projection(1);
-	
+
 	unsigned int cubemapTexture = loadCubemap(faces);
 	unsigned int skyboxVAO, skyboxVBO;
 	glGenVertexArrays(1, &skyboxVAO);
@@ -410,18 +422,17 @@ int main()
 	skyBoxShader->use();
 	skyBoxShader->setInt("skybox", 0);
 
-	
+
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
 	{
-		
+
 
 		glfwGetWindowSize(window, &SCR_WIDTH, &SCR_HEIGHT);
 		GLfloat currentFrame = (float)glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
-		cout << "Frame time: " << deltaTime << endl;
 		// input
 		// -----
 		processInput(window);
@@ -432,36 +443,16 @@ int main()
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 		{
-			ImGui::Begin("Hello, world!");
-			ImGui::Text("Pozycja œwiat³a punktowego");
-			ImGui::SliderFloat("x", &x_axis, -100.0f, 100.0f);
-			ImGui::SliderFloat("y", &y_axis, -100.0f, 100.0f);
+			ImGui::Begin("Settings");
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::ColorEdit3("Ambient Light", (float*)&lightAmbient); // Edit 3 floats representing a color
 			ImGui::ColorEdit3("Diffuse Light", (float*)&lightDiffuse);
 			ImGui::ColorEdit3("Specular Light", (float*)&lightSpecular);
-			ImGui::SliderFloat("Reflection", &reflectionStrength, 0.0f, 1.0f);
-			ImGui::SliderFloat("Refraction", &refraction, 0.0f, 4.0f);
 			ImGui::Text("DirLight light direction");
 			ImGui::SliderFloat("x-direction", &lightDirection.x, -10.0f, 10.0f);
 			ImGui::SliderFloat("y-direction", &lightDirection.y, -10.0f, 10.0f);
 			ImGui::SliderFloat("z-direction", &lightDirection.z, -10.0f, 10.0f);
 			ImGui::SliderFloat("dirLightStrenght", &dirLightStrenght, 0.0f, 1.0f);
-			ImGui::Text("Pozycja reflektora_1");
-			ImGui::SliderFloat("pos_x", &slPosX, -10.0f, 10.0f);
-			ImGui::SliderFloat("pos_y", &slPosY, -10.0f, 10.0f);
-			ImGui::SliderFloat("pos_z", &slPosZ, -10.0f, 10.0f);
-			ImGui::Text("Kierunek swiatla reflektora_1");
-			ImGui::SliderFloat("dirX", &spotLightDirection.x, -10.0f, 10.0f);
-			ImGui::SliderFloat("dirY", &spotLightDirection.y, -10.0f, 10.0f);
-			ImGui::SliderFloat("dirZ", &spotLightDirection.z, -10.0f, 10.0f);
-			ImGui::Text("Pozycja reflektora_2");
-			ImGui::SliderFloat("pos_x1", &slPosX1, -10.0f, 10.0f);
-			ImGui::SliderFloat("pos_y1", &slPosY1, -10.0f, 10.0f);
-			ImGui::SliderFloat("pos_z1", &slPosZ1, -10.0f, 10.0f);
-			ImGui::Text("Kierunek swiatla reflektora_2");
-			ImGui::SliderFloat("dirX1", &spotLightDirection1.x, -10.0f, 10.0f);
-			ImGui::SliderFloat("dirY1", &spotLightDirection1.y, -10.0f, 10.0f);
-			ImGui::SliderFloat("dirZ1", &spotLightDirection1.z, -10.0f, 10.0f);
 			ImGui::Checkbox("glPolygonMode", &isWireframeModeActive);
 			ImGui::Checkbox("pointLight", &pointLightEnabled);
 			ImGui::Checkbox("spotlight1", &spotLightEnabled);
@@ -479,21 +470,11 @@ int main()
 					cout << "Zmiana trybu wyswietlania " << endl;
 				}
 			}
-				
-			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			
-			ImGui::End();
-
-			ImGui::Begin("PBR");
-			ImGui::Text("Parametry swiat³a PBR");
-			ImGui::SliderFloat("metalliness", &metallines, 0.0f, 1.0f);
-			ImGui::SliderFloat("roughness", &roughness, 0.0f, 1.0f);
-			ImGui::SliderFloat("ambient oclusion", &ao, 0.0f, 1.0f);
 			ImGui::End();
 		}
 
 		root->Rotate(-1.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
-		
+
 		moon->Rotate(-3.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
 		moonPivot->Rotate(14.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.3f));
 		spotLightPosition = UFO->GetWorldPosition();
@@ -512,7 +493,7 @@ int main()
 		WorldLightDirection.z = DirLightPosition[3][2];
 
 		glm::mat4 lightProjection(1), lightView(1);
-		
+
 		float near_plane = -10.0f, far_plane = 100.0f;
 		lightProjection = glm::ortho(-100.0f, 100.0f, -80.0f, 80.0f, near_plane, far_plane);
 		lightView = glm::lookAt(WorldLightDirection, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
@@ -523,7 +504,7 @@ int main()
 		float aspect = (float)CUBEMAP_SHADOW_WIDTH / (float)CUBEMAP_SHADOW_HEIGHT;
 		float near_plan = 5.0f, far_plan = 100.0f;
 		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near_plan, far_plan);
-		
+
 		lightPosition = lightB->GetWorldPosition();
 		std::vector<glm::mat4> shadowTransforms;
 		shadowTransforms.push_back(shadowProj *
@@ -538,7 +519,7 @@ int main()
 			glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
 		shadowTransforms.push_back(shadowProj *
 			glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
-		
+
 
 		//directional light shadow map drawing
 		depthShader->use();
@@ -562,15 +543,15 @@ int main()
 		//	cubemapDepthShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
 		//cubemapDepthShader->setVec3("lightPos", lightPosition);
 		//cubemapDepthShader->setFloat("far_plane", far_plan);
-		//// 1. wygeneruj mapê g³êbokoœci
+		//// 1. wygeneruj mapï¿½ gï¿½ï¿½bokoï¿½ci
 		//root->Draw();
 		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		// 2. normalnie wyrenderuj scenê korzystaj¹c z mapy g³êbokoœci (cubemap)
-		
+		// 2. normalnie wyrenderuj scenï¿½ korzystajï¿½c z mapy gï¿½ï¿½bokoï¿½ci (cubemap)
+
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		root->SetShader(ourShader);
+		root->SetShader(ourShader.get());
 		ourShader->use();
 		ourShader->setMat4("view", view);
 		ourShader->setMat4("projection", projection);
@@ -580,32 +561,21 @@ int main()
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
 		ourShader->setInt("skybox", 3);
-		glActiveTexture(GL_TEXTURE0);
+		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 		ourShader->setInt("depthCubemap", 2);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
 
-		/*instantiateShader->use();
-		instantiateShader->setMat4("view", view);
-		instantiateShader->setMat4("projection", projection);
-		instantiateShader->setInt("texture_diffuse1", 0);
-		*/
-		
-		if (PBR) {
-			setPBRShader(ourShader);
-			//setPBRShader(instantiateShader);
-		}
-		else {
-			setPhongShader(ourShader);
-			//setPhongShader(instantiateShader);
-		}
+		setPBRShader(ourShader.get());
+
 		root->Draw();
 		glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
 		skyBoxShader->use();
 		view = glm::mat4(glm::mat3(camera->GetViewMatrix())); // remove translation from the view matrix
 		skyBoxShader->setMat4("view", view);
 		skyBoxShader->setMat4("projection", projection);
+
 		// skybox cube
 		glBindVertexArray(skyboxVAO);
 		glActiveTexture(GL_TEXTURE0);
@@ -613,12 +583,6 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 		glDepthFunc(GL_LESS); // set depth function back to default
-		
-		
-
-		
-
-		
 		/*debugDepthQuad->use();
 		debugDepthQuad->setFloat("near_plane", near_plane);
 		debugDepthQuad->setFloat("far_plane", far_plane);
@@ -633,9 +597,9 @@ int main()
 		gameManager.spacebarPushed(spacebarPushed);
 		gameManager.enterPushed(enterPushed);
 		gameManager.GameOps();
-		
+
 		root->Update(deltaTime * 5);
-		
+
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
@@ -644,19 +608,16 @@ int main()
 	glDeleteVertexArrays(1, &skyboxVAO);
 	glDeleteBuffers(1, &skyboxVAO);
 	//glDeleteBuffers(1, &buffer);
-	delete ourShader;
-	delete ourShader2;
 	//delete instantiateShader;
-	delete skyBoxShader;
 	root->~GraphNode();
-	
+
 
 	ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 	glfwTerminate();
 
-	
+
 	return 0;
 }
 
@@ -696,7 +657,7 @@ void processInput(GLFWwindow *window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
-	  
+
 	/*if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		camera.ProcessKeyboard(FORWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -712,11 +673,11 @@ void processInput(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
 		verticalDirection = 1.0f;
 		horizontalDirection = 0.0f;
-	}	
+	}
 	else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
 		verticalDirection = -1.0f;
 		horizontalDirection = 0.0f;
-	}	
+	}
 	else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
 		horizontalDirection = -1.0f;
 		verticalDirection = 0.0f;
@@ -729,12 +690,12 @@ void processInput(GLFWwindow *window)
 		horizontalDirection = 0.0f;
 		verticalDirection = 0.0f;
 	}
-	
+
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
 		spacebarPushed = true;
 	else
 		spacebarPushed = false;
-	
+
 	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
 		enterPushed = true;
 	else
@@ -807,14 +768,8 @@ unsigned int loadCubemap(vector<std::string> faces)
 
 void setPBRShader(Shader *shader) {
 	shader->use();
-	
+
 	shader->setVec3("camPos", camera->Position);
-	
-	shader->setFloat("ao", ao);
-	shader->setFloat("metallic", metallines);
-	shader->setFloat("roughness", roughness);
-	shader->setFloat("reflectionStrength", reflectionStrength);
-	shader->setFloat("refraction", refraction);
 
 	shader->setVec3("pointLight.color", lightDiffuse);
 	shader->setVec3("pointLight.position", lightPosition);
@@ -837,44 +792,6 @@ void setPBRShader(Shader *shader) {
 	shader->setFloat("spotLight[1].outerCutOff", glm::cos(glm::radians(16.0f)));
 	shader->setVec3("spotLight[1].color", 0.0f, 0.0f, 1.0f);
 	shader->setBool("spotLight[1].enabled", spotLightEnabled1);
-}
-
-void setPhongShader(Shader *shader) {
-	shader->use();
-	shader->setVec3("dirLight.ambient", lightAmbient);
-	shader->setVec3("dirLight.diffuse", lightDiffuse);
-	shader->setVec3("dirLight.specular", lightSpecular);
-	shader->setVec3("dirLight.direction", -lightDirection);
-
-	shader->setVec3("pointLight.position", lightPosition);
-	shader->setVec3("pointLight.ambient", 0.05f, 0.05f, 0.05f);
-	shader->setVec3("pointLight.diffuse", 0.8f, 0.8f, 0.8f);
-	shader->setVec3("pointLight.specular", 1.0f, 1.0f, 1.0f);
-	shader->setFloat("pointLight.constant", 1.0f);
-	shader->setFloat("pointLight.linear", 0.09f);
-	shader->setFloat("pointLight.quadratic", 0.032f);
-
-	shader->setVec3("spotLight[0].position", spotLightPosition);
-	shader->setVec3("spotLight[0].direction", spotLightDirection);
-	shader->setFloat("spotLight[0].cutOff", glm::cos(glm::radians(12.0f)));
-	shader->setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(16.0f)));
-	shader->setVec3("spotLight[0].ambient", 0.05f, 0.05f, 0.05f);
-	shader->setVec3("spotLight[0].diffuse", 0.8f, 0.0f, 0.0f);
-	shader->setVec3("spotLight[0].specular", 1.0f, 1.0f, 1.0f);
-	shader->setFloat("spotLight[0].constant", 1.0f);
-	shader->setFloat("spotLight[0].linear", 0.09f);
-	shader->setFloat("spotLight[0].quadratic", 0.032f);
-
-	shader->setVec3("spotLight[1].position", spotLightPosition1);
-	shader->setVec3("spotLight[1].direction", spotLightDirection1);
-	shader->setFloat("spotLight[1].cutOff", glm::cos(glm::radians(12.0f)));
-	shader->setFloat("spotLight[1].outerCutOff", glm::cos(glm::radians(16.0f)));
-	shader->setVec3("spotLight[1].ambient", 0.05f, 0.05f, 0.05f);
-	shader->setVec3("spotLight[1].diffuse", 0.0f, 0.8f, 0.0f);
-	shader->setVec3("spotLight[1].specular", 1.0f, 1.0f, 1.0f);
-	shader->setFloat("spotLight[1].constant", 1.0f);
-	shader->setFloat("spotLight[1].linear", 0.09f);
-	shader->setFloat("spotLight[1].quadratic", 0.032f);
 }
 
 void APIENTRY glDebugOutput(GLenum source,

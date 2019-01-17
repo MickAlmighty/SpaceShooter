@@ -1,4 +1,3 @@
-
 #ifndef GAMEMANAGER_H
 #define GAMEMANAGER_H
 #include <vector>
@@ -58,7 +57,7 @@ private:
 	STATE GAME_STATE = IN_MENU;
 	WEAPON WEAPON_MODE = SINGLE_SHOT;
 	ISoundEngine *SoundEngine;
-
+	string SOUND_PATH;
 	bool SpacebarIsPushed();
 	bool EnterIsPushed();
 	void removeObjectOutsideTheCamera(vector<NodePtr>&);
@@ -75,7 +74,7 @@ private:
 	void movePlayer();
 	void moveObjects(vector<NodePtr>&);
 public:
-	GameManager(NodePtr graph, float* , float*);
+	GameManager(NodePtr graph, string SOUND_PATH, float* , float*);
 	~GameManager();
 	void setPlayer(GraphNode* playerPtr);
 	void setBullet(GraphNode* bulletPtr);
@@ -89,6 +88,7 @@ public:
 	void GameOps();
 	void ResetGame();
 	void SetFrameTime(float frameTime);
+	static void SetSoundPath(string&);
 	
 };
 #endif // !GAMEMANAGER_H

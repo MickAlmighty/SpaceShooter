@@ -29,6 +29,8 @@ private:
 	float ao = 0.1f;
 	float metaliness = 0.5f;
 	float roughness = 0.9f;
+	float reflection = 0.0f;
+	float refraction = 0.0f;
 	/*  Funkcje   */
 	void loadModel(string const &path)
 	{
@@ -195,8 +197,9 @@ public:
 	vector<Texture> textures_loaded;
 	void SetShader(Shader* s) { shader = s; }
 	/*  Funkcje   */
-	Model(char *path, float _ao = 0.1f, float _metaliness = 0.5f, float _roughness = 0.2f) 
-		: ao(_ao), metaliness(_metaliness), roughness(_roughness)
+	Model(string path, float _ao = 0.1f, float _metaliness = 0.5f,
+		float _roughness = 0.2f, float _reflection = 0.0f, float _refraction = 0.0f)
+		: ao(_ao), metaliness(_metaliness), roughness(_roughness), reflection(_reflection), refraction(_refraction)
 	{
 		isFromFile = true;
 		loadModel(path);
@@ -225,6 +228,8 @@ public:
 			shader->setFloat("ao", ao);
 			shader->setFloat("metallic", metaliness);
 			shader->setFloat("roughness", roughness);
+			shader->setFloat("reflectionStrength", reflection);
+			shader->setFloat("refraction", refraction);
 		}
 		for (unsigned int i = 0; i < meshes.size(); i++)
 		{

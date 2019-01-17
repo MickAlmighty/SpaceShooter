@@ -180,7 +180,7 @@ vec3 calculatePointLight(vec3 albedo, vec3 N, vec3 V)
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;  
 
         vec3 ambient = vec3(0.03) * albedo * ao;
-        vec3 color = ambient + Lo;// * (1 - PointLightShadowCalculation(FragPos));
+        vec3 color = ambient + Lo * (1 - PointLightShadowCalculation(FragPos));
         return color;
     }
     return vec3(0);
@@ -286,6 +286,7 @@ vec3 calculateRefraction(vec3 N, vec3 I)
     else
         skyboxRefract = vec3(0);
     return skyboxRefract;
+    
 }
 
 float ShadowCalculation(vec4 fragPosLightSpace, vec3 Normal, vec3 lightDir){
