@@ -22,9 +22,9 @@
 #include <ctime>
 
 
-//extern "C" {
-//	_declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
-//}
+extern "C" {
+	_declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+}
 
 void APIENTRY glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity,
 	GLsizei length, const GLchar *message, const void *userParam);
@@ -261,7 +261,7 @@ int main()
 	Model* spaceShip = new Model(getPathWin32().append("\\res\\models\\spaceship\\Wraith Raider Starship.obj"), 0.25f, 0.75f, 0.386f);
 	Model* bullet = new Model(getPathWin32().append("\\res\\models\\bullet\\bullet.obj"), 1.0f, 0.0f, 0.121f);
 	Model* spaceShip2 = new Model(getPathWin32().append("\\res\\models\\enemy_spaceship\\Wraith Raider Starship.obj"), 0.25f, 0.75f, 0.386f);
-	Model* ast = new Model(getPathWin32().append("\\res\\models\\asteroida\\Asteroid.obj"), 0.11f, 0.129f, 0.49f, 0.4f);
+	Model* ast = new Model(getPathWin32().append("\\res\\models\\asteroida\\Asteroid.obj"), 0.11f, 0.129f, 0.49f, 1.0f);
 	Model* healthPowerUp = new Model(getPathWin32().append("\\res\\models\\powerups\\health\\health.obj"), 0.11f, 0.129f, 0.49f);
 	Model* doubleShotsPowerUp = new Model(getPathWin32().append("\\res\\models\\powerups\\doubleShooting\\doubleShots.obj"), 0.11f, 0.129f, 0.49f);
 	Model* moonModel = new Model(getPathWin32().append("\\res\\models\\moon\\moon.obj"), 0.11f, 0.129f, 0.49f);
@@ -534,18 +534,18 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		//point light shadow map drawing
-		//glViewport(0, 0, CUBEMAP_SHADOW_WIDTH, CUBEMAP_SHADOW_HEIGHT);
-		//glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		//cubemapDepthShader->use();
-		//root->SetShader(cubemapDepthShader.get());
-		//for (unsigned int i = 0; i < 6; ++i)
-		//	cubemapDepthShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
-		//cubemapDepthShader->setVec3("lightPos", lightPosition);
-		//cubemapDepthShader->setFloat("far_plane", far_plan);
-		//// 1. wygeneruj map� g��boko�ci
-		//root->Draw();
-		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, CUBEMAP_SHADOW_WIDTH, CUBEMAP_SHADOW_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		cubemapDepthShader->use();
+		root->SetShader(cubemapDepthShader.get());
+		for (unsigned int i = 0; i < 6; ++i)
+			cubemapDepthShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+		cubemapDepthShader->setVec3("lightPos", lightPosition);
+		cubemapDepthShader->setFloat("far_plane", far_plan);
+		// 1. wygeneruj map� g��boko�ci
+		root->Draw();
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		// 2. normalnie wyrenderuj scen� korzystaj�c z mapy g��boko�ci (cubemap)
 
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
