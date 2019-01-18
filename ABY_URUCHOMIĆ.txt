@@ -1,0 +1,8 @@
+1. Dodaj ścieżki bezwzględne (pełne ścieżki) bibliotek do linkera Visual Studio :
+\scrolling-shooter\thirdparty\irrKlang\lib\Win32-visualStudio\irrKlang.lib
+\scrolling-shooter\thirdparty\freetype2.3.5-1\lib\freetype.lib
+
+2. Wrzuć biblioteki *.dll do folderu z plikiem .exe
+DLL_Needed\freetype6.dll
+DLL_Needed\ikpMP3.dll
+DLL_Needed\irrKlang.dll
