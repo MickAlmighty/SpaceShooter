@@ -85,15 +85,15 @@ set(STB_IMAGE_LIBRARY "stb_image")
 set(STB_IMAGE_INCLUDE_DIR "${STB_IMAGE_DIR}")
 
 # irrKlang
-set(IRRKLANG_DIR "${THIRDPARTY_DIR}/irrKlang")
-find_file(IRRKLANG_LIBRARY "${IRRKLANG_DIR}/lib/Win32-visualStudio/irrKlang" PATH_SUFFIXES "*.lib")
-set(IRRKLANG_INCLUDE_DIR "${IRRKLANG_DIR}/include")
-if((NOT IRRKLANG_LIBRARY))# OR (NOT IRRKLANG_INCLUDE_DIR))
-	message("IRRKLANG ERROR!!!!!!!!!!!!!!!!!!!!!!!!" )
-	message("${IRRKLANG_LIBRARY}" )
-endif()
+find_package(Irrklang REQUIRED)
 
-# set(IRRKLANG_DIR "${THIRDPARTY_DIR}/irrKlang-1.6.0")
-# find_library(IRRKLANG_LIBRARY "${IRRKLANG_DIR}/lib/Win32-visualStudio/irrKlang" )
-# set(IRRKLANG_INCLUDE_DIR "${IRRKLANG_DIR/include}")
-#find_path(IRRKLANG_INCLUDE_DIR "${IRRKLANG_DIR}/include")
+# freetype2
+set(FREETYPE_DIR "${THIRDPARTY_DIR}/freetype2.3.5-1")
+
+add_subdirectory("${FREETYPE_DIR}")
+
+set(FREETYPE_LIBRARY "freetype")
+set(FREETYPE_INCLUDE_DIR "${FREETYPE_DIR}/include")
+
+MESSAGE(STATUS "FREETYPE_LIBRARY = ${FREETYPE_LIBRARY}")
+MESSAGE(STATUS "FREETYPE_INCLUDE_DIR = ${FREETYPE_INCLUDE_DIR}")
