@@ -21,7 +21,7 @@
 #include <cstdlib>
 #include <ctime>
 
-
+//comment extern below if you don't have NVidia GPU
 extern "C" {
 	_declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 }
@@ -295,7 +295,7 @@ int main()
 	root->AddChild(laserBullet);
 	root->AddChild(pointLightPivot);
 	pointLightPivot->AddChild(lightB);
-	lightB->setPosition(0.0f, 0.0f, 1.0f);
+	lightB->transform.setPosition(0.0f, 0.0f, 1.0f);
 	root->AddChild(ship);
 	root->AddChild(ship2);
 	root->AddChild(asteroid);
@@ -305,43 +305,43 @@ int main()
 	root->AddChild(moonPivot);
 	moonPivot->AddChild(UFO);
 
-	lightB->setPosition(10.0f, 10.0f, 30.0f);
+	lightB->transform.setPosition(10.0f, 10.0f, 30.0f);
 
-	ship->setPosition(-17, 0, 0);
-	ship->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
-	ship->Rotate(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	ship->Rotate(75.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+	ship->transform.setPosition(-17, 0, 0);
+	ship->transform.Scale(glm::vec3(0.005f, 0.005f, 0.005f));
+	ship->transform.Rotate(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	ship->transform.Rotate(75.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 
-	ship2->setPosition(50, 0, 0);
-	ship2->Scale(glm::vec3(0.005f, 0.005f, 0.005f));
-	ship2->Rotate(-90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	ship2->Rotate(-75.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+	ship2->transform.setPosition(50, 0, 0);
+	ship2->transform.Scale(glm::vec3(0.005f, 0.005f, 0.005f));
+	ship2->transform.Rotate(-90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	ship2->transform.Rotate(-75.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 	ship2->Active(false);
 
-	asteroid->setPosition(0, 0, 0);
-	asteroid->Scale(glm::vec3(0.002f, 0.002f, 0.002f));
+	asteroid->transform.setPosition(0, 0, 0);
+	asteroid->transform.Scale(glm::vec3(0.002f, 0.002f, 0.002f));
 	asteroid->Active(false);
 
-	laserBullet->setPosition(0, 0, -3);
-	laserBullet->Scale(glm::vec3(0.05f, 0.05f, 0.05f));
+	laserBullet->transform.setPosition(0, 0, -3);
+	laserBullet->transform.Scale(glm::vec3(0.05f, 0.05f, 0.05f));
 	laserBullet->Active(false);
-	cam->setPosition(0.0f, 0.0f, 30.0f);
+	cam->transform.setPosition(0.0f, 0.0f, 30.0f);
 
-	health->setPosition(0, 0, 0);
-	health->Scale(glm::vec3(0.045, 0.045, 0.045));
+	health->transform.setPosition(0, 0, 0);
+	health->transform.Scale(glm::vec3(0.045, 0.045, 0.045));
 	health->Active(false);
 
-	moon->setPosition(30, 10, -80);
-	moon->Scale(glm::vec3(0.6, 0.6, 0.6));
-	moonPivot->setPosition(moon->getPosition().x, moon->getPosition().y, moon->getPosition().z);
+	moon->transform.setPosition(30, 10, -80);
+	moon->transform.Scale(glm::vec3(0.6, 0.6, 0.6));
+	moonPivot->transform.setPosition(moon->transform.getPosition().x, moon->transform.getPosition().y, moon->transform.getPosition().z);
 
-	UFO->setPosition(45, -8, 0);
-	UFO->Rotate(90.0f, glm::vec3(0, 0, -1));
-	UFO->Scale(glm::vec3(0.05, 0.05, 0.05));
+	UFO->transform.setPosition(45, -8, 0);
+	UFO->transform.Rotate(90.0f, glm::vec3(0, 0, -1));
+	UFO->transform.Scale(glm::vec3(0.05, 0.05, 0.05));
 
-	doubleShots->setPosition(0, 0, 0);
-	doubleShots->Rotate(90.0f, glm::vec3(1, 0, 0));
-	doubleShots->Scale(glm::vec3(0.045, 0.045, 0.045));
+	doubleShots->transform.setPosition(0, 0, 0);
+	doubleShots->transform.Rotate(90.0f, glm::vec3(1, 0, 0));
+	doubleShots->transform.Scale(glm::vec3(0.045, 0.045, 0.045));
 	doubleShots->Active(false);
 	shared_ptr<TextRenderer> textPtr = std::make_shared<TextRenderer>(SCR_WIDTH, SCR_HEIGHT, textShader.get());
 	textPtr.get()->Load(getPathWin32().append("\\res\\fonts\\MKStencilsansBlack.ttf"), 30);
@@ -473,12 +473,12 @@ int main()
 			ImGui::End();
 		}
 
-		root->Rotate(-1.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
+		root->transform.Rotate(-1.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
 
-		moon->Rotate(-3.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
-		moonPivot->Rotate(14.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.3f));
-		spotLightPosition = UFO->GetWorldPosition();
-		spotLightDirection = glm::normalize(moon->GetWorldPosition() - UFO->GetWorldPosition());// +glm::vec3(-0.5, 0, 0);
+		moon->transform.Rotate(-3.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
+		moonPivot->transform.Rotate(14.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.3f));
+		spotLightPosition = UFO->worldTransform.getPosition();
+		spotLightDirection = glm::normalize(moon->worldTransform.getPosition() - UFO->worldTransform.getPosition());// +glm::vec3(-0.5, 0, 0);
 
 		glm::mat4 projection = glm::perspective(glm::radians(camera->Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera->GetViewMatrix();
@@ -487,7 +487,7 @@ int main()
 		DirLightPosition[3][0] = lightDirection.x;
 		DirLightPosition[3][1] = lightDirection.y;
 		DirLightPosition[3][2] = lightDirection.z;
-		DirLightPosition = graph->GetWorldTransform() * DirLightPosition;
+		DirLightPosition = graph->worldTransform.TransformMatrix() * DirLightPosition;
 		WorldLightDirection.x = DirLightPosition[3][0];
 		WorldLightDirection.y = DirLightPosition[3][1];
 		WorldLightDirection.z = DirLightPosition[3][2];
@@ -505,7 +505,7 @@ int main()
 		float near_plan = 5.0f, far_plan = 100.0f;
 		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near_plan, far_plan);
 
-		lightPosition = lightB->GetWorldPosition();
+		lightPosition = lightB->worldTransform.getPosition();
 		std::vector<glm::mat4> shadowTransforms;
 		shadowTransforms.push_back(shadowProj *
 			glm::lookAt(lightPosition, lightPosition + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));

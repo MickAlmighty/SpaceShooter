@@ -135,10 +135,10 @@ private:
 		{
 			bool dirtySum = parent->GetDirtyFlag() | dirty;
 			if (dirtySum) {
-				worldTransform = parent->GetWorldTransform() * transform;
-				Position.x = worldTransform[3][0];
-				Position.y = worldTransform[3][1];
-				Position.z = worldTransform[3][2];
+				worldTransform.TransformMatrix(parent->worldTransform.TransformMatrix() * transform.GetTransform());
+				Position.x = worldTransform.TransformMatrix()[3][0];
+				Position.y = worldTransform.TransformMatrix()[3][1];
+				Position.z = worldTransform.TransformMatrix()[3][2];
 				updateCameraVectors();
 				//cout << worldTransform[3][0] << " " << worldTransform[3][1] << " " << worldTransform[3][2]<< endl;
 				dirty = false;

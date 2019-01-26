@@ -1,6 +1,6 @@
-
 #ifndef GRAPHNODE_H
 #define GRAPHNODE_H
+
 #include <Model.h>
 #include <glm/glm.hpp>
 class GraphNode
@@ -8,9 +8,6 @@ class GraphNode
 protected:
 	GraphNode* parent;
 	Model* model;
-	glm::mat4 worldTransform;
-	glm::mat4 transform;
-	
 	std::vector<GraphNode*> children;
 	
 	bool dirty;
@@ -22,12 +19,13 @@ protected:
 	float shootingCooldown;
 	GraphNode* shootingObject;
 public:
+	Transform transform;
+	Transform worldTransform;
+
 	GraphNode(Model* m = nullptr, glm::vec2 _min = glm::vec2(0), glm::vec2 _max = glm::vec2(0))
 	{
 		this->model = m;
 		parent = NULL;
-		transform = glm::mat4(1);
-		worldTransform = glm::mat4(1);
 		dirty = true;
 		active = true;
 		min = _min;
@@ -78,7 +76,7 @@ public:
 		{
 			//bool dirtySum = parent->dirty | dirty;
 			//if (dirtySum) {
-				worldTransform = parent->worldTransform * transform;
+				worldTransform.TransformMatrix(parent->worldTransform.TransformMatrix() * transform.TransformMatrix());
 				dirty = false;
 			//}
 		}
@@ -102,52 +100,19 @@ public:
 		}
 
 	}
+
 	virtual void Draw() 
 	{
-		if (model && active) { model->Draw(worldTransform); }
+		if (model && active) { model->Draw(worldTransform.TransformMatrix()); }
 
 		for (GraphNode* node : children)
 		{
 			node->Draw();
 		}
 	}
-	void Rotate(float angle, glm::vec3 axis) {
-		transform = glm::rotate(transform, glm::radians(angle), axis);
-		dirty = true;
-	}
-	void Translate(glm::vec3 translation) {
-		transform = glm::translate(transform, translation);
-		dirty = true;
-	}
-	void Scale(glm::vec3 scale) {
-		transform = glm::scale(transform, scale);
-		dirty = true;
-	}
-	void setPosition(float x, float y, float z) {
-		transform[3][0] = x;
-		transform[3][1] = y;
-		transform[3][2] = z;
-		dirty = true;
-	}
 
-	glm::vec3 getPosition() 
-	{
-		glm::vec3 position = glm::vec3(transform[3]);
-		return position;
-	}
-	
 	void Active(bool state) { active = state; }
 	void SetModel(Model* m) { model = m; }
-
-	glm::mat4 GetTransform() { return transform; }
-
-	glm::mat4 GetWorldTransform() { return worldTransform; }
-
-	glm::vec3 GetWorldPosition() {
-		glm::vec3 position = glm::vec3(worldTransform[3]);
-		return position;
-	}
-
 	Model* GetModel() { return model; }
 
 	bool GetDirtyFlag() { return dirty; }
@@ -166,7 +131,7 @@ public:
 	void SetShootingObject(GraphNode* node) { shootingObject = node; }
 	
 	glm::vec2 GetMin() {
-		glm::vec2 pos(getPosition().x, getPosition().y);
+		glm::vec2 pos(transform.getPosition().x, transform.getPosition().y);
 		glm::vec2 tmp;
 		tmp.x = pos.x + min.x;
 		tmp.y = pos.y + min.y;
@@ -174,7 +139,7 @@ public:
 	}
 
 	glm::vec2 GetMax() {
-		glm::vec2 pos(getPosition().x, getPosition().y);
+		glm::vec2 pos(transform.getPosition().x, transform.getPosition().y);
 		glm::vec2 tmp;
 		tmp.x = pos.x + max.x;
 		tmp.y = pos.y + max.y;

@@ -80,7 +80,7 @@ void GameManager::ResetGame()
 	enemyList.clear();
 	bulletList.clear();
 	asteroidList.clear();
-	player->setPosition(-17.0f, 0.0f, 0.0f);
+	player->transform.setPosition(-17.0f, 0.0f, 0.0f);
 	PLAYER_LIFES = 3;
 	SCORE = 0;
 	GAME_STATE = IN_GAME;
@@ -137,17 +137,17 @@ void GameManager::addBullet(glm::vec3& position, glm::vec3& direction, GraphNode
 	if (mode == SINGLE_SHOT) 
 	{
 		NodePtr oneBullet = std::make_shared<GraphNode>(bullet.get());
-		oneBullet->setPosition(position.x, position.y, position.z);
+		oneBullet->transform.setPosition(position.x, position.y, position.z);
 		oneBullet->SetDirection(direction);
 		oneBullet->SetSpeed(BULLET_SPEED);
 		oneBullet->SetShootingObject(shootingObject);
 		float angleRadians = glm::angle(glm::vec3(1, 0, 0), direction);
 
 		float angle = angleRadians * (float)(180 / M_PI);
-		if (player->getPosition().y > shootingObject->getPosition().y)
-			oneBullet.get()->Rotate(angle, glm::vec3(0, 0, 1));
+		if (player->transform.getPosition().y > shootingObject->transform.getPosition().y)
+			oneBullet.get()->transform.Rotate(angle, glm::vec3(0, 0, 1));
 		else
-			oneBullet.get()->Rotate(-angle, glm::vec3(0, 0, 1));
+			oneBullet.get()->transform.Rotate(-angle, glm::vec3(0, 0, 1));
 
 
 		bulletList.push_back(oneBullet);
@@ -156,13 +156,13 @@ void GameManager::addBullet(glm::vec3& position, glm::vec3& direction, GraphNode
 	else if (mode == DOUBLE_SHOT)
 	{
 		NodePtr firstBullet = std::make_shared<GraphNode>(bullet.get());
-		firstBullet->setPosition(position.x, position.y + 0.2f, position.z);
+		firstBullet->transform.setPosition(position.x, position.y + 0.2f, position.z);
 		firstBullet->SetDirection(direction);
 		firstBullet->SetSpeed(BULLET_SPEED);
 		firstBullet->SetShootingObject(shootingObject);
 
 		NodePtr secondBullet = std::make_shared<GraphNode>(bullet.get());
-		secondBullet->setPosition(position.x, position.y - 0.25f, position.z);
+		secondBullet->transform.setPosition(position.x, position.y - 0.25f, position.z);
 		secondBullet->SetDirection(direction);
 		secondBullet->SetSpeed(BULLET_SPEED);
 		secondBullet->SetShootingObject(shootingObject);
@@ -192,7 +192,7 @@ void GameManager::spawnEnemy()
 		NodePtr tmp = std::make_shared<GraphNode>(enemyShip.get());
 		tmp->SetDirection(glm::vec3(-1.0f, 0.0f, 0.0f));
 		tmp->SetSpeed(ENEMY_SPEED);
-		tmp->setPosition(25.0f, y, 0.0f);
+		tmp->transform.setPosition(25.0f, y, 0.0f);
 		enemyList.push_back(tmp);
 		sceneGraph->AddChild(tmp.get());
 		
@@ -208,7 +208,7 @@ void GameManager::spawnAsteroid()
 		float y = -11.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (10.0f - (-11.0f))));
 		float z = -30.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (-5.0f - (-30.0f))));
 		NodePtr tmp = std::make_shared<GraphNode>(asteroid.get());
-		tmp->setPosition(50.0f, y, z);
+		tmp->transform.setPosition(50.0f, y, z);
 		tmp->SetSpeed(static_cast <float> (((rand()) / static_cast <float> (RAND_MAX)))* 10.0f);
 		float i = static_cast <float> ((rand()) / static_cast <float> (RAND_MAX)) + 1;
 		float j = -1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (1.0f - (-1.0f))));
@@ -229,7 +229,7 @@ void GameManager::spawnPowerUps(float& cooldown, vector<NodePtr>& powerUps, Node
 		
 		float y = -11.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (10.0f - (-11.0f))));
 		
-		tmp->setPosition(25.0f, y, -0.5f);
+		tmp->transform.setPosition(25.0f, y, -0.5f);
 		tmp->SetSpeed(9.0f);
 		tmp->SetDirection(glm::vec3(-1, 0, 0));
 		powerUps.push_back(tmp);
@@ -239,21 +239,21 @@ void GameManager::spawnPowerUps(float& cooldown, vector<NodePtr>& powerUps, Node
 
 void GameManager::movePlayer()
 {
-	glm::vec3 shipPosition = player->getPosition();
+	glm::vec3 shipPosition = player->transform.getPosition();
 	float xVal = shipPosition.x + *horizontalDirection * PLAYER_SPEED * FRAME_TIME;
 	float yVal = shipPosition.y + *verticalDirection * PLAYER_SPEED * FRAME_TIME;
 	if (xVal >= -19.0f && xVal <= 16.0f && yVal <= 11.0f && yVal >= -12.0f) {
-		player->setPosition(xVal, yVal, 0.0f);
+		player->transform.setPosition(xVal, yVal, 0.0f);
 	}
 }
 
 void GameManager::moveObjects(vector<NodePtr>& objectContainer)
 {
 	for (NodePtr& gameObject : objectContainer) {
-		glm::vec3 gameObjectPos = gameObject->getPosition();
+		glm::vec3 gameObjectPos = gameObject->transform.getPosition();
 		float x = gameObjectPos.x + gameObject->GetDirection().x * gameObject->GetSpeed() * FRAME_TIME;
 		float y = gameObjectPos.y + gameObject->GetDirection().y * gameObject->GetSpeed() * FRAME_TIME;
-		gameObject->setPosition( x, y, gameObjectPos.z);
+		gameObject->transform.setPosition( x, y, gameObjectPos.z);
 	}
 }
 
@@ -271,7 +271,7 @@ void GameManager::removeObjectOutsideTheCamera(vector<NodePtr>& v)
 {
 	for (NodePtr& object : v) 
 	{
-		glm::vec3 xPos = object->getPosition();
+		glm::vec3 xPos = object->transform.getPosition();
 		
 		if (xPos.x < -30.0f || xPos.x > 30.0f) {
 			sceneGraph->RemoveNode(object.get());
@@ -285,7 +285,7 @@ void GameManager::removeAsteroidsOutsideTheCamera(vector<NodePtr>& v)
 {
 	for (NodePtr& object : v)
 	{
-		glm::vec3 xPos = object->getPosition();
+		glm::vec3 xPos = object->transform.getPosition();
 
 		if (xPos.x < -100.0f || xPos.x > 100.0f) {
 			sceneGraph->RemoveNode(object.get());
@@ -317,7 +317,7 @@ void GameManager::ShootIfPossible()
 	}
 	if (SpacebarIsPushed() && (float)glfwGetTime() >= COOLDOWN)
 	{
-		addBullet(player->getPosition(), glm::vec3(1, 0, 0), player.get(), WEAPON_MODE);
+		addBullet(player->transform.getPosition(), glm::vec3(1, 0, 0), player.get(), WEAPON_MODE);
 		playerShot = true;
 	}
 	else
@@ -434,15 +434,15 @@ void GameManager::EnemyShooting()
 		if (time >= enemy->GetShootingCooldown() && enemy->IsActive())
 		{
 			enemy->SetShootingCooldown((float)glfwGetTime() + static_cast <float> (rand()) / static_cast <float> (RAND_MAX) + 1.0f);
-			if( enemy->getPosition().x >= player->getPosition().x + 2.5)
+			if( enemy->transform.getPosition().x >= player->transform.getPosition().x + 2.5)
 			{
-				glm::vec3 dir = glm::normalize(player->getPosition() - enemy->getPosition());
+				glm::vec3 dir = glm::normalize(player->transform.getPosition() - enemy->transform.getPosition());
 
-				addBullet(enemy->getPosition(), dir, enemy.get(), WEAPON::SINGLE_SHOT);
+				addBullet(enemy->transform.getPosition(), dir, enemy.get(), WEAPON::SINGLE_SHOT);
 			}
 			else 
 			{
-				addBullet(enemy->getPosition(), glm::vec3(-1.0f, 0.0f, 0.0f), enemy.get(), WEAPON::SINGLE_SHOT);
+				addBullet(enemy->transform.getPosition(), glm::vec3(-1.0f, 0.0f, 0.0f), enemy.get(), WEAPON::SINGLE_SHOT);
 			}
 			
 		}
