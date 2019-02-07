@@ -19,7 +19,6 @@
 #include <Skybox.h>
 #include <DebugUtils.h>
 #include <GlobalVariables.h>
-#include <IOManager.h>
 
 #include <iostream>
 #include <cstdlib>
@@ -30,8 +29,17 @@ extern "C" {
 	_declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 }
 
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void processInput(GLFWwindow *window);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+unsigned int loadCubemap(vector<std::string> faces);
 void setPBRShader(Shader *shader);
-string getPathWin32();
+void renderQuad();
+
+
+// settings
+
 
 string getPathWin32() {
 	char myPath[_MAX_PATH + 1];
@@ -42,6 +50,15 @@ string getPathWin32() {
 	return path;
 }
 
+vector<std::string> faces
+{
+	getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4X+.png"),
+	getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4X-.png"),
+	getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4Y+.png"),
+	getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4Y-.png"),
+	getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4Z+.png"),
+	getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4Z-.png")
+};
 
 int main()
 {
@@ -79,7 +96,7 @@ int main()
 
 // glfw window creation
 // --------------------
-	GLFWwindow* window = glfwCreateWindow(globals::SCR_WIDTH, globals::SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -87,9 +104,9 @@ int main()
 		return -1;
 	}
 	glfwMakeContextCurrent(window);
-	glfwSetFramebufferSizeCallback(window, IOManager::framebuffer_size_callback);
-	glfwSetCursorPosCallback(window, IOManager::mouse_callback);
-	glfwSetScrollCallback(window, IOManager::scroll_callback);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetCursorPosCallback(window, mouse_callback);
+	glfwSetScrollCallback(window, scroll_callback);
 	glfwSwapInterval(0); // Enable vsync
 	// tell GLFW to capture our mouse
 	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -183,7 +200,7 @@ int main()
 	GraphNode* pointLightPivot = new GraphNode();
 	GraphNode* ship = new GraphNode(spaceShip, glm::vec2(-1.5, -1), glm::vec2(0.5, 0.5));
 	GraphNode* laserBullet = new GraphNode(bullet, glm::vec2(-0.2, -0.1), glm::vec2(0.2, 0.1));
-	GraphNode* cam = globals::camera;
+	GraphNode* cam = camera;
 	GraphNode* ship2 = new GraphNode(spaceShip2, glm::vec2(-0.5, -1), glm::vec2(1, 1));
 	GraphNode* asteroid = new GraphNode(ast);
 	GraphNode* health = new GraphNode(healthPowerUp, glm::vec2(-0.4, -0.4), glm::vec2(0.4, 0.4));
@@ -245,11 +262,11 @@ int main()
 	doubleShots->transform.Rotate(90.0f, glm::vec3(1, 0, 0));
 	doubleShots->transform.Scale(glm::vec3(0.045, 0.045, 0.045));
 	doubleShots->Active(false);
-	shared_ptr<TextRenderer> textPtr = std::make_shared<TextRenderer>(globals::SCR_WIDTH, globals::SCR_HEIGHT, textShader.get());
+	shared_ptr<TextRenderer> textPtr = std::make_shared<TextRenderer>(SCR_WIDTH, SCR_HEIGHT, textShader.get());
 	textPtr.get()->Load(getPathWin32().append("\\res\\fonts\\MKStencilsansBlack.ttf"), 30);
 
 	//GameManager::SetSoundPath(getPathWin32().append("\\res\\sounds\\"));
-	GameManager gameManager(graph, getPathWin32().append("\\res\\sounds\\"), &globals::horizontalDirection, &globals::verticalDirection);
+	GameManager gameManager(graph, getPathWin32().append("\\res\\sounds\\"), &horizontalDirection, &verticalDirection);
 	gameManager.setPlayer(ship);
 	gameManager.setBullet(laserBullet);
 	gameManager.setEnemyShip(ship2);
@@ -265,8 +282,8 @@ int main()
 	const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
 
 
-	glGenTextures(1, &globals::depthMap);
-	glBindTexture(GL_TEXTURE_2D, globals::depthMap);
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
 		SHADOW_WIDTH, SHADOW_WIDTH, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -275,7 +292,7 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, globals::depthMap, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 	//glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
@@ -312,7 +329,7 @@ int main()
 	glm::mat4 view(1);
 	glm::mat4 projection(1);
 
-	Skybox skybox(globals::faces);
+	Skybox skybox(faces);
 	skyBoxShader->use();
 	skyBoxShader->setInt("skybox", 0);
 
@@ -323,13 +340,13 @@ int main()
 	{
 
 
-		glfwGetWindowSize(window, &globals::SCR_WIDTH, &globals::SCR_HEIGHT);
+		glfwGetWindowSize(window, &SCR_WIDTH, &SCR_HEIGHT);
 		GLfloat currentFrame = (float)glfwGetTime();
-		globals::deltaTime = currentFrame - globals::lastFrame;
-		globals::lastFrame = currentFrame;
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
 		// input
 		// -----
-		IOManager::processInput(window);
+		processInput(window);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		// Start the Dear ImGui frame
@@ -339,23 +356,23 @@ int main()
 		{
 			ImGui::Begin("Settings");
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			ImGui::ColorEdit3("Ambient Light", (float*)&globals::lightAmbient); // Edit 3 floats representing a color
-			ImGui::ColorEdit3("Diffuse Light", (float*)&globals::lightDiffuse);
-			ImGui::ColorEdit3("Specular Light", (float*)&globals::lightSpecular);
+			ImGui::ColorEdit3("Ambient Light", (float*)&lightAmbient); // Edit 3 floats representing a color
+			ImGui::ColorEdit3("Diffuse Light", (float*)&lightDiffuse);
+			ImGui::ColorEdit3("Specular Light", (float*)&lightSpecular);
 			ImGui::Text("DirLight light direction");
-			ImGui::SliderFloat("x-direction", &globals::lightDirection.x, -10.0f, 10.0f);
-			ImGui::SliderFloat("y-direction", &globals::lightDirection.y, -10.0f, 10.0f);
-			ImGui::SliderFloat("z-direction", &globals::lightDirection.z, -10.0f, 10.0f);
-			ImGui::SliderFloat("dirLightStrenght", &globals::dirLightStrenght, 0.0f, 1.0f);
-			ImGui::Checkbox("glPolygonMode", &globals::isWireframeModeActive);
-			ImGui::Checkbox("pointLight", &globals::pointLightEnabled);
-			ImGui::Checkbox("spotlight1", &globals::spotLightEnabled);
-			ImGui::Checkbox("spotLight2", &globals::spotLightEnabled1);
-			ImGui::Checkbox("dirLight", &globals::dirLightEnabled);
+			ImGui::SliderFloat("x-direction", &lightDirection.x, -10.0f, 10.0f);
+			ImGui::SliderFloat("y-direction", &lightDirection.y, -10.0f, 10.0f);
+			ImGui::SliderFloat("z-direction", &lightDirection.z, -10.0f, 10.0f);
+			ImGui::SliderFloat("dirLightStrenght", &dirLightStrenght, 0.0f, 1.0f);
+			ImGui::Checkbox("glPolygonMode", &isWireframeModeActive);
+			ImGui::Checkbox("pointLight", &pointLightEnabled);
+			ImGui::Checkbox("spotlight1", &spotLightEnabled);
+			ImGui::Checkbox("spotLight2", &spotLightEnabled1);
+			ImGui::Checkbox("dirLight", &dirLightEnabled);
 			if (ImGui::Button("ActivatePlygonMode"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
 			{
-				globals::isWireframeModeActive = !globals::isWireframeModeActive;
-				if (globals::isWireframeModeActive) {
+				isWireframeModeActive = !isWireframeModeActive;
+				if (isWireframeModeActive) {
 					cout << "Zmiana trybu wyswietlania " << endl;
 					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				}
@@ -367,31 +384,31 @@ int main()
 			ImGui::End();
 		}
 
-		root->transform.Rotate(-1.0f * globals::deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
+		root->transform.Rotate(-1.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
 
-		moon->transform.Rotate(-3.0f * globals::deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
-		moonPivot->transform.Rotate(14.0f * globals::deltaTime, glm::vec3(0.0f, 1.0f, 0.3f));
-		globals::spotLightPosition = UFO->worldTransform.getPosition();
-		globals::spotLightDirection = glm::normalize(moon->worldTransform.getPosition() - UFO->worldTransform.getPosition());// +glm::vec3(-0.5, 0, 0);
+		moon->transform.Rotate(-3.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
+		moonPivot->transform.Rotate(14.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.3f));
+		spotLightPosition = UFO->worldTransform.getPosition();
+		spotLightDirection = glm::normalize(moon->worldTransform.getPosition() - UFO->worldTransform.getPosition());// +glm::vec3(-0.5, 0, 0);
 
-		glm::mat4 projection = glm::perspective(glm::radians(globals::camera->Zoom), (float)globals::SCR_WIDTH / (float)globals::SCR_HEIGHT, 0.1f, 100.0f);
-		glm::mat4 view = globals::camera->GetViewMatrix();
+		glm::mat4 projection = glm::perspective(glm::radians(camera->Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		glm::mat4 view = camera->GetViewMatrix();
 
 		glm::mat4 DirLightPosition(1);
-		DirLightPosition[3][0] = globals::lightDirection.x;
-		DirLightPosition[3][1] = globals::lightDirection.y;
-		DirLightPosition[3][2] = globals::lightDirection.z;
+		DirLightPosition[3][0] = lightDirection.x;
+		DirLightPosition[3][1] = lightDirection.y;
+		DirLightPosition[3][2] = lightDirection.z;
 		DirLightPosition = graph->worldTransform.TransformMatrix() * DirLightPosition;
-		globals::WorldLightDirection.x = DirLightPosition[3][0];
-		globals::WorldLightDirection.y = DirLightPosition[3][1];
-		globals::WorldLightDirection.z = DirLightPosition[3][2];
+		WorldLightDirection.x = DirLightPosition[3][0];
+		WorldLightDirection.y = DirLightPosition[3][1];
+		WorldLightDirection.z = DirLightPosition[3][2];
 
 		glm::mat4 lightProjection(1), lightView(1);
 
 		float near_plane = -10.0f, far_plane = 100.0f;
 		lightProjection = glm::ortho(-100.0f, 100.0f, -80.0f, 80.0f, near_plane, far_plane);
-		lightView = glm::lookAt(globals::WorldLightDirection, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
-		globals::lightSpaceMatrix = lightProjection * lightView;
+		lightView = glm::lookAt(WorldLightDirection, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+		lightSpaceMatrix = lightProjection * lightView;
 
 
 
@@ -399,25 +416,25 @@ int main()
 		float near_plan = 5.0f, far_plan = 100.0f;
 		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near_plan, far_plan);
 
-		globals::lightPosition = lightB->worldTransform.getPosition();
+		lightPosition = lightB->worldTransform.getPosition();
 		std::vector<glm::mat4> shadowTransforms;
 		shadowTransforms.push_back(shadowProj *
-			glm::lookAt(globals::lightPosition, globals::lightPosition + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+			glm::lookAt(lightPosition, lightPosition + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
 		shadowTransforms.push_back(shadowProj *
-			glm::lookAt(globals::lightPosition, globals::lightPosition + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+			glm::lookAt(lightPosition, lightPosition + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
 		shadowTransforms.push_back(shadowProj *
-			glm::lookAt(globals::lightPosition, globals::lightPosition + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
+			glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
 		shadowTransforms.push_back(shadowProj *
-			glm::lookAt(globals::lightPosition, globals::lightPosition + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
+			glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
 		shadowTransforms.push_back(shadowProj *
-			glm::lookAt(globals::lightPosition, globals::lightPosition + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
+			glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
 		shadowTransforms.push_back(shadowProj *
-			glm::lookAt(globals::lightPosition, globals::lightPosition + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
+			glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
 
 
 		//directional light shadow map drawing
 		depthShader->use();
-		depthShader->setMat4("lightSpaceMatrix", globals::lightSpaceMatrix);
+		depthShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 		glClear(GL_DEPTH_BUFFER_BIT);
@@ -435,25 +452,25 @@ int main()
 		root->SetShader(cubemapDepthShader.get());
 		for (unsigned int i = 0; i < 6; ++i)
 			cubemapDepthShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
-		cubemapDepthShader->setVec3("lightPos", globals::lightPosition);
+		cubemapDepthShader->setVec3("lightPos", lightPosition);
 		cubemapDepthShader->setFloat("far_plane", far_plan);
 		// 1. wygeneruj map� g��boko�ci
 		root->Draw();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		// 2. normalnie wyrenderuj scen� korzystaj�c z mapy g��boko�ci (cubemap)
 
-		glViewport(0, 0, globals::SCR_WIDTH, globals::SCR_HEIGHT);
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		root->SetShader(ourShader.get());
 		ourShader->use();
 		ourShader->setMat4("view", view);
 		ourShader->setMat4("projection", projection);
-		ourShader->setMat4("LightSpaceMatrix", globals::lightSpaceMatrix);
+		ourShader->setMat4("LightSpaceMatrix", lightSpaceMatrix);
 		ourShader->setFloat("far_plane", far_plan);
 		ourShader->setInt("shadowMap", 1);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, globals::depthMap);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
 		ourShader->setInt("skybox", 3);
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skybox.getTextureID());
@@ -466,7 +483,7 @@ int main()
 		root->Draw();
 		
 		skyBoxShader->use();
-		view = glm::mat4(glm::mat3(globals::camera->GetViewMatrix())); // remove translation from the view matrix
+		view = glm::mat4(glm::mat3(camera->GetViewMatrix())); // remove translation from the view matrix
 		skyBoxShader->setMat4("view", view);
 		skyBoxShader->setMat4("projection", projection);
 		skybox.DrawSkybox();
@@ -480,12 +497,12 @@ int main()
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		gameManager.SetFrameTime(globals::deltaTime);
-		gameManager.spacebarPushed(globals::spacebarPushed);
-		gameManager.enterPushed(globals::enterPushed);
+		gameManager.SetFrameTime(deltaTime);
+		gameManager.spacebarPushed(spacebarPushed);
+		gameManager.enterPushed(enterPushed);
 		gameManager.GameOps();
 
-		root->Update(globals::deltaTime * 5);
+		root->Update(deltaTime * 5);
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
@@ -506,30 +523,113 @@ int main()
 	return 0;
 }
 
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// ---------------------------------------------------------------------------------------------------------
+void processInput(GLFWwindow *window)
+{
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+
+	/*if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		camera.ProcessKeyboard(FORWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		camera.ProcessKeyboard(BACKWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		camera.ProcessKeyboard(LEFT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		camera.ProcessKeyboard(RIGHT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+		glfwSetCursorPosCallback(window, NULL);
+	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
+		glfwSetCursorPosCallback(window, mouse_callback);*/
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+		verticalDirection = 1.0f;
+		horizontalDirection = 0.0f;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+		verticalDirection = -1.0f;
+		horizontalDirection = 0.0f;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+		horizontalDirection = -1.0f;
+		verticalDirection = 0.0f;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+		horizontalDirection = 1.0f;
+		verticalDirection = 0.0f;
+	}
+	else {
+		horizontalDirection = 0.0f;
+		verticalDirection = 0.0f;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+		spacebarPushed = true;
+	else
+		spacebarPushed = false;
+
+	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
+		enterPushed = true;
+	else
+		enterPushed = false;
+}
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	GLfloat xpos1 = (float)xpos;
+	GLfloat ypos1 = (float)ypos;
+	if (firstMouse)
+	{
+		lastX = xpos1;
+		lastY = ypos1;
+		firstMouse = false;
+	}
+
+	GLfloat xoffset = xpos1 - lastX;
+	GLfloat yoffset = lastY - ypos1;
+	lastX = xpos1;
+	lastY = ypos1;
+
+	//camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	camera->ProcessMouseScroll((float)yoffset);
+}
+// glfw: whenever the window size changed (by OS or user resize) this callback function executes
+// ---------------------------------------------------------------------------------------------
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+	// make sure the viewport matches the new window dimensions; note that width and 
+	// height will be significantly larger than specified on retina displays.
+	glViewport(0, 0, width, height);
+}
+
 void setPBRShader(Shader *shader) {
 	shader->use();
 
-	shader->setVec3("camPos", globals::camera->Position);
+	shader->setVec3("camPos", camera->Position);
 
-	shader->setVec3("pointLight.color", globals::lightDiffuse);
-	shader->setVec3("pointLight.position", globals::lightPosition);
-	shader->setBool("pointLight.enabled", globals::pointLightEnabled);
+	shader->setVec3("pointLight.color", lightDiffuse);
+	shader->setVec3("pointLight.position", lightPosition);
+	shader->setBool("pointLight.enabled", pointLightEnabled);
 
-	shader->setVec3("dirLight.direction", globals::WorldLightDirection);
-	shader->setVec3("dirLight.color", globals::lightAmbient);
-	shader->setFloat("dirLight.lightStrength", globals::dirLightStrenght);
-	shader->setBool("dirLight.enabled", globals::dirLightEnabled);
+	shader->setVec3("dirLight.direction", WorldLightDirection);
+	shader->setVec3("dirLight.color", lightAmbient);
+	shader->setFloat("dirLight.lightStrength", dirLightStrenght);
+	shader->setBool("dirLight.enabled", dirLightEnabled);
 
-	shader->setVec3("spotLight[0].position", globals::spotLightPosition);
-	shader->setVec3("spotLight[0].direction", globals::spotLightDirection);
+	shader->setVec3("spotLight[0].position", spotLightPosition);
+	shader->setVec3("spotLight[0].direction", spotLightDirection);
 	shader->setFloat("spotLight[0].cutOff", glm::cos(glm::radians(8.0f)));
 	shader->setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(16.0f)));
 	shader->setVec3("spotLight[0].color", 0.0f, 1.0f, 0.1f);
-	shader->setBool("spotLight[0].enabled", globals::spotLightEnabled);
-	shader->setVec3("spotLight[1].position", globals::spotLightPosition1);
-	shader->setVec3("spotLight[1].direction", globals::spotLightDirection1);
+	shader->setBool("spotLight[0].enabled", spotLightEnabled);
+	shader->setVec3("spotLight[1].position", spotLightPosition1);
+	shader->setVec3("spotLight[1].direction", spotLightDirection1);
 	shader->setFloat("spotLight[1].cutOff", glm::cos(glm::radians(12.0f)));
 	shader->setFloat("spotLight[1].outerCutOff", glm::cos(glm::radians(16.0f)));
 	shader->setVec3("spotLight[1].color", 0.0f, 0.0f, 1.0f);
-	shader->setBool("spotLight[1].enabled", globals::spotLightEnabled1);
+	shader->setBool("spotLight[1].enabled", spotLightEnabled1);
 }

@@ -5,6 +5,9 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/vector_angle.hpp>
 #include <sstream>
+#include <corecrt_math_defines.h>
+#include <iostream>
+
 
 GameManager::GameManager(NodePtr graph, string path, float* hDir, float* vDir) {
 	sceneGraph = graph;
@@ -410,7 +413,7 @@ bool GameManager::CheckCollision(GraphNode* one, GraphNode* two, bool bulletMode
 		if (one->GetShootingObject() == two)
 			return false;
 
-	if (one->IsActive() == false || two->IsActive() == false)
+	if (one->Active() == false || two->Active() == false)
 		return false;
 
 	float d1x = two->GetMin().x - one->GetMax().x;
@@ -431,7 +434,7 @@ void GameManager::EnemyShooting()
 {
 	for (NodePtr& enemy : enemyList) {
 		float time = (float)glfwGetTime();
-		if (time >= enemy->GetShootingCooldown() && enemy->IsActive())
+		if (time >= enemy->GetShootingCooldown() && enemy->Active())
 		{
 			enemy->SetShootingCooldown((float)glfwGetTime() + static_cast <float> (rand()) / static_cast <float> (RAND_MAX) + 1.0f);
 			if( enemy->transform.getPosition().x >= player->transform.getPosition().x + 2.5)

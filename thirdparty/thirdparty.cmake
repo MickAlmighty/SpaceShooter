@@ -2,28 +2,21 @@
 find_package(OpenGL REQUIRED)
 set(OPENGL_LIBRARY ${OPENGL_LIBRARIES})
 
-# assimp
-find_library(ASSIMP_LIBRARY "assimp" "/usr/lib" "/usr/local/lib")
-find_path(ASSIMP_INCLUDE_DIR "assimp/mesh.h" "/usr/include" "/usr/local/include")
+# irrKlang
+find_package(Irrklang REQUIRED)
 
-if((NOT ASSIMP_LIBRARY) OR (NOT ASSIMP_INCLUDE_DIR))
-	set(ASSIMP_DIR "${THIRDPARTY_DIR}/assimp")
-	
-	message("Unable to find assimp, cloning...")
-    execute_process(COMMAND git submodule update --init ${ASSIMP_DIR}
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+# freetype2
+# set(FREETYPE_DIR "${THIRDPARTY_DIR}/freetype2")
 
-	set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "Build package with shared libraries.")
-	set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE INTERNAL "If the supplementary tools for Assimp are built in addition to the library.")
-	set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "If the test suite for Assimp is built in addition to the library.")
+# add_subdirectory("${FREETYPE_DIR}")
 
-    add_subdirectory("${ASSIMP_DIR}")
+# FIND_LIBRARY( FREETYPE_LIBRARY NAMES freetype PATHS
+# 			"${FREETYPE_DIR}/build/Release")
+# #set(FREETYPE_LIBRARY "${FREETYPE_DIR}/build/Release/freetype.lib")
+# set(FREETYPE_INCLUDE_DIR "${FREETYPE_DIR}/include")
 
-	set(ASSIMP_LIBRARY "assimp")
-	set(ASSIMP_INCLUDE_DIR "${ASSIMP_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/thirdparty/assimp/include")
-endif()
-
-set(CMAKE_DEBUG_POSTFIX "")
+# MESSAGE(STATUS "FREETYPE_LIBRARY = ${FREETYPE_LIBRARY}")
+# MESSAGE(STATUS "FREETYPE_INCLUDE_DIR = ${FREETYPE_INCLUDE_DIR}")
 
 # glfw
 find_library(GLFW_LIBRARY "glfw" "/usr/lib" "/usr/local/lib")
@@ -58,19 +51,19 @@ set(GLAD_INCLUDE_DIR "${GLAD_DIR}/include")
 # glm
 set(GLM_DIR "${THIRDPARTY_DIR}/glm")
 execute_process(COMMAND git submodule update --init ${GLM_DIR}
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(GLM_INCLUDE_DIR "${GLM_DIR}")
 
 # imgui
 set(IMGUI_DIR "${THIRDPARTY_DIR}/imgui")
 execute_process(COMMAND git submodule update --init ${IMGUI_DIR}
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-					
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
 add_library("imgui" STATIC "${IMGUI_DIR}/imgui.cpp"
-					"${IMGUI_DIR}/imgui_demo.cpp"
-					"${IMGUI_DIR}/imgui_draw.cpp"
-					"${IMGUI_DIR}/imgui_widgets.cpp")
+                           "${IMGUI_DIR}/imgui_demo.cpp"
+                           "${IMGUI_DIR}/imgui_draw.cpp"
+                           "${IMGUI_DIR}/imgui_widgets.cpp")
 target_include_directories("imgui" PRIVATE "${IMGUI_DIR}")
 
 set(IMGUI_LIBRARY "imgui")
@@ -84,16 +77,23 @@ target_include_directories("stb_image" PRIVATE "${STB_IMAGE_DIR}")
 set(STB_IMAGE_LIBRARY "stb_image")
 set(STB_IMAGE_INCLUDE_DIR "${STB_IMAGE_DIR}")
 
-# irrKlang
-find_package(Irrklang REQUIRED)
+# assimp
+find_library(ASSIMP_LIBRARY "assimp" "/usr/lib" "/usr/local/lib")
+find_path(ASSIMP_INCLUDE_DIR "assimp/mesh.h" "/usr/include" "/usr/local/include")
 
-# freetype2
-set(FREETYPE_DIR "${THIRDPARTY_DIR}/freetype2.3.5-1")
+if((NOT ASSIMP_LIBRARY) OR (NOT ASSIMP_INCLUDE_DIR))
+	set(ASSIMP_DIR "${THIRDPARTY_DIR}/assimp")
+	
+	message("Unable to find assimp, cloning...")
+    execute_process(COMMAND git submodule update --init ${ASSIMP_DIR}
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_subdirectory("${FREETYPE_DIR}")
+	set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "Build package with shared libraries.")
+	set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE INTERNAL "If the supplementary tools for Assimp are built in addition to the library.")
+	set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "If the test suite for Assimp is built in addition to the library.")
 
-set(FREETYPE_LIBRARY "freetype")
-set(FREETYPE_INCLUDE_DIR "${FREETYPE_DIR}/include")
+    add_subdirectory("${ASSIMP_DIR}")
 
-MESSAGE(STATUS "FREETYPE_LIBRARY = ${FREETYPE_LIBRARY}")
-MESSAGE(STATUS "FREETYPE_INCLUDE_DIR = ${FREETYPE_INCLUDE_DIR}")
+	set(ASSIMP_LIBRARY "assimp")
+	set(ASSIMP_INCLUDE_DIR "${ASSIMP_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/thirdparty/assimp/include")
+endif()

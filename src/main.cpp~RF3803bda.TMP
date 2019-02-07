@@ -19,11 +19,11 @@
 #include <Skybox.h>
 #include <DebugUtils.h>
 #include <GlobalVariables.h>
-#include <IOManager.h>
 
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
+#include "IOManager.h"
 
 //comment extern below if you don't have NVidia GPU
 extern "C" {
@@ -31,7 +31,6 @@ extern "C" {
 }
 
 void setPBRShader(Shader *shader);
-string getPathWin32();
 
 string getPathWin32() {
 	char myPath[_MAX_PATH + 1];

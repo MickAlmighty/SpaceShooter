@@ -13,7 +13,10 @@ add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
 # Define the include DIRs
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Headers")
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Sources")
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Utilities")
 target_include_directories(${PROJECT_NAME} PUBLIC "${ASSIMP_INCLUDE_DIR}")
 target_include_directories(${PROJECT_NAME} PUBLIC "${GLFW_INCLUDE_DIR}")
 target_include_directories(${PROJECT_NAME} PUBLIC "${GLAD_INCLUDE_DIR}")
@@ -41,20 +44,22 @@ add_custom_command(TARGET  ${PROJECT_NAME} POST_BUILD
 						   ${CMAKE_SOURCE_DIR}/res
 						   ${CMAKE_CURRENT_BINARY_DIR}/res)
 
-if(WIN32)
-	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-		add_custom_command(TARGET  ${SAMPLE_NAME} PRE_BUILD
-							COMMAND ${CMAKE_COMMAND} -E copy_directory
-							${CMAKE_SOURCE_DIR}/thirdparty/irrKlang-1.6.0/bin/win32-visualStudio
-							${CMAKE_CURRENT_BINARY_DIR})
-	elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-		add_custom_command(TARGET  ${SAMPLE_NAME} PRE_BUILD
-							COMMAND ${CMAKE_COMMAND} -E copy_directory
-							${CMAKE_SOURCE_DIR}/thirdparty/irrKlang-1.6.0/bin/win32-gcc
-							${CMAKE_CURRENT_BINARY_DIR})
-	endif()
-endif(WIN32)
+if(MSVC_IDE)
+	# Macro to preserve source files hierarchy in the IDE
+	macro(GroupSources curdir)
+		file(GLOB children RELATIVE ${CMAKE_SOURCE_DIR}/${curdir} ${CMAKE_SOURCE_DIR}/${curdir}/*)
 
-# Create virtual folders to make it look nicer in VS
-source_group("sources" FILES ${SOURCE_FILES_EXE})						   
-source_group("headers" FILES ${HEADER_FILES_EXE})
+		foreach(child ${children})
+			if(IS_DIRECTORY ${CMAKE_SOURCE_DIR}/${curdir}/${child})
+				GroupSources(${curdir}/${child})
+			else()
+				string(REPLACE "/" "\\" groupname ${curdir})
+				string(REPLACE "src" "sources" groupname ${groupname})
+				source_group(${groupname} FILES ${CMAKE_SOURCE_DIR}/${curdir}/${child})
+			endif()
+		endforeach()
+	endmacro()
+
+	# Run macro
+	GroupSources(src)
+endif() 

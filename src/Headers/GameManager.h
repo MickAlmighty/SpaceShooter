@@ -6,6 +6,7 @@
 #include <irrKlang.h>
 #include <TextRenderer.h>
 using namespace irrklang;
+
 enum STATE {
 	IN_MENU,
 	IN_GAME
