@@ -2,7 +2,7 @@
 #define GLOBALVARIABLES_H
 #include <glm/glm.hpp>
 #include <Camera.h>
-extern string getPathWin32();
+
 namespace globals{
 	
 	extern int SCR_WIDTH;

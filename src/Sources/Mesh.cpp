@@ -31,7 +31,7 @@ void Mesh::Draw(Shader* shader, glm::mat4 &model, bool &isFromFile)
 	shader->use();
 
 	shader->setMat4("model", model);
-	for (unsigned int i = 0; i < 1; i++)
+	for (unsigned int i = 0; i < textures.size(); i++)
 	{
 		glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
 		// retrieve texture number (the N in diffuse_textureN)

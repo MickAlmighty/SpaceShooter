@@ -20,10 +20,12 @@
 #include <DebugUtils.h>
 #include <GlobalVariables.h>
 #include <IOManager.h>
+#include <FileManager.h>
 
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
+
 
 //comment extern below if you don't have NVidia GPU
 extern "C" {
@@ -31,17 +33,6 @@ extern "C" {
 }
 
 void setPBRShader(Shader *shader);
-string getPathWin32();
-
-string getPathWin32() {
-	char myPath[_MAX_PATH + 1];
-	GetModuleFileName(NULL, myPath, _MAX_PATH);
-	string path = myPath;
-	std::size_t found = path.find("src");
-	path = path.substr(0, found + 3);
-	return path;
-}
-
 
 int main()
 {
@@ -135,39 +126,38 @@ int main()
 	// build and compile our shader zprogram
 	// ------------------------------------
 	shared_ptr<Shader> ourShader = std::make_shared<Shader>(
-		getPathWin32().append("/res/shaders/shader.vs").c_str(),
-		getPathWin32().append("\\res\\shaders\\shaderPBR.frag").c_str());
+		FileManager::RelativePath("res/shaders/shader.vs").c_str(),
+		FileManager::RelativePath("res/shaders/shaderPBR.frag").c_str());
 	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.fs");
 
 	shared_ptr<Shader> skyBoxShader = std::make_shared<Shader>(
-		getPathWin32().append("\\res\\shaders\\skybox.vert").c_str(),
-		getPathWin32().append("\\res\\shaders\\skybox.frag").c_str());
+		FileManager::RelativePath("res/shaders/skybox.vert").c_str(),
+		FileManager::RelativePath("res/shaders/skybox.frag").c_str());
 	shared_ptr<Shader>textShader = std::make_shared<Shader>(
-		getPathWin32().append("\\res\\shaders\\text.vert").c_str(),
-		getPathWin32().append("\\res\\shaders\\text.frag").c_str());
+		FileManager::RelativePath("res/shaders/text.vert").c_str(),
+		FileManager::RelativePath("res/shaders/text.frag").c_str());
 	shared_ptr<Shader> depthShader = std::make_shared<Shader>(
-		getPathWin32().append("\\res\\shaders\\depthShader.vert").c_str(),
-		getPathWin32().append("\\res\\shaders\\depthShader.frag").c_str());
+		FileManager::RelativePath("res/shaders/depthShader.vert").c_str(),
+		FileManager::RelativePath("res/shaders/depthShader.frag").c_str());
 
 	shared_ptr<Shader> debugDepthQuad = std::make_shared<Shader>(
-		getPathWin32().append("\\res\\shaders\\debugDepth.vert").c_str(),
-		getPathWin32().append("\\res\\shaders\\debugDepth.frag").c_str());
+		FileManager::RelativePath("res/shaders/debugDepth.vert").c_str(),
+		FileManager::RelativePath("res/shaders/debugDepth.frag").c_str());
 
 	shared_ptr<Shader> cubemapDepthShader = std::make_shared<Shader>(
-		getPathWin32().append("\\res\\shaders\\cubemapDepth.vert").c_str(),
-		getPathWin32().append("\\res\\shaders\\cubemapDepth.frag").c_str(),
-		getPathWin32().append("\\res\\shaders\\cubemapDepth.gs").c_str());
-	bool PBR = true;
+		FileManager::RelativePath("res/shaders/cubemapDepth.vert").c_str(),
+		FileManager::RelativePath("res/shaders/cubemapDepth.frag").c_str(),
+		FileManager::RelativePath("res/shaders/cubemapDepth.gs").c_str());
 
-	Model* lightBox = new Model(getPathWin32().append("\\res\\models\\lightBox\\LightBox.fbx"));
-	Model* spaceShip = new Model(getPathWin32().append("\\res\\models\\spaceship\\Wraith Raider Starship.obj"), 0.25f, 0.75f, 0.386f);
-	Model* bullet = new Model(getPathWin32().append("\\res\\models\\bullet\\bullet.obj"), 1.0f, 0.0f, 0.121f);
-	Model* spaceShip2 = new Model(getPathWin32().append("\\res\\models\\enemy_spaceship\\Wraith Raider Starship.obj"), 0.25f, 0.75f, 0.386f);
-	Model* ast = new Model(getPathWin32().append("\\res\\models\\asteroida\\Asteroid.obj"), 0.11f, 0.129f, 0.49f, 1.0f);
-	Model* healthPowerUp = new Model(getPathWin32().append("\\res\\models\\powerups\\health\\health.obj"), 0.11f, 0.129f, 0.49f);
-	Model* doubleShotsPowerUp = new Model(getPathWin32().append("\\res\\models\\powerups\\doubleShooting\\doubleShots.obj"), 0.11f, 0.129f, 0.49f);
-	Model* moonModel = new Model(getPathWin32().append("\\res\\models\\moon\\moon.obj"), 0.11f, 0.129f, 0.49f);
-	Model* ufo = new Model(getPathWin32().append("\\res\\models\\ufo\\Low_poly_UFO.obj"));
+	Model* lightBox = new Model(FileManager::RelativePath("res/models/lightBox/LightBox.fbx"));
+	Model* spaceShip = new Model(FileManager::RelativePath("res/models/spaceship/Wraith Raider Starship.obj"), 0.25f, 0.75f, 0.386f);
+	Model* bullet = new Model(FileManager::RelativePath("res/models/bullet/bullet.obj"), 1.0f, 0.0f, 0.121f);
+	Model* spaceShip2 = new Model(FileManager::RelativePath("res/models/enemy_spaceship/Wraith Raider Starship.obj"), 0.25f, 0.75f, 0.386f);
+	Model* ast = new Model(FileManager::RelativePath("res/models/asteroida/Asteroid.obj"), 0.11f, 0.129f, 0.49f, 1.0f);
+	Model* healthPowerUp = new Model(FileManager::RelativePath("res/models/powerups/health/health.obj"), 0.11f, 0.129f, 0.49f);
+	Model* doubleShotsPowerUp = new Model(FileManager::RelativePath("res/models/powerups/doubleShooting/doubleShots.obj"), 0.11f, 0.129f, 0.49f);
+	Model* moonModel = new Model(FileManager::RelativePath("res/models/moon/moon.obj"), 0.11f, 0.129f, 0.49f);
+	Model* ufo = new Model(FileManager::RelativePath("res/models/ufo/Low_poly_UFO.obj"));
 	//
 	lightBox->SetShader(ourShader.get());
 	spaceShip->SetShader(ourShader.get());
@@ -246,10 +236,10 @@ int main()
 	doubleShots->transform.Scale(glm::vec3(0.045, 0.045, 0.045));
 	doubleShots->Active(false);
 	shared_ptr<TextRenderer> textPtr = std::make_shared<TextRenderer>(globals::SCR_WIDTH, globals::SCR_HEIGHT, textShader.get());
-	textPtr.get()->Load(getPathWin32().append("\\res\\fonts\\MKStencilsansBlack.ttf"), 30);
+	textPtr.get()->Load(FileManager::RelativePath("res/fonts/MKStencilsansBlack.ttf"), 30);
 
 	//GameManager::SetSoundPath(getPathWin32().append("\\res\\sounds\\"));
-	GameManager gameManager(graph, getPathWin32().append("\\res\\sounds\\"), &globals::horizontalDirection, &globals::verticalDirection);
+	GameManager gameManager(graph, FileManager::RelativePath("res/sounds/"), &globals::horizontalDirection, &globals::verticalDirection);
 	gameManager.setPlayer(ship);
 	gameManager.setBullet(laserBullet);
 	gameManager.setEnemyShip(ship2);

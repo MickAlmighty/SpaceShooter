@@ -1,5 +1,5 @@
-﻿#include  <GlobalVariables.h>
-
+﻿#include <GlobalVariables.h>
+#include <FileManager.h>
 namespace globals {
 
 	int SCR_WIDTH = 1280;
@@ -39,11 +39,11 @@ namespace globals {
 
 	vector<std::string> faces
 	{
-		getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4X+.png"),
-		getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4X-.png"),
-		getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4Y+.png"),
-		getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4Y-.png"),
-		getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4Z+.png"),
-		getPathWin32().append("\\res\\cubemaps\\galaxy\\skybox4Z-.png")
+		FileManager::RelativePath("res/cubemaps/galaxy/skybox4X+.png"),
+		FileManager::RelativePath("res/cubemaps/galaxy/skybox4X-.png"),
+		FileManager::RelativePath("res/cubemaps/galaxy/skybox4Y+.png"),
+		FileManager::RelativePath("res/cubemaps/galaxy/skybox4Y-.png"),
+		FileManager::RelativePath("res/cubemaps/galaxy/skybox4Z+.png"),
+		FileManager::RelativePath("res/cubemaps/galaxy/skybox4Z-.png")
 	};
 }
