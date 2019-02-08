@@ -21,10 +21,12 @@
 #include <GlobalVariables.h>
 #include <IOManager.h>
 #include <FileManager.h>
+#include <Framebuffer.h>
 
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
+
 
 
 //comment extern below if you don't have NVidia GPU
@@ -152,8 +154,9 @@ int main()
 	Model* lightBox = new Model(FileManager::RelativePath("res/models/lightBox/LightBox.fbx"));
 	Model* spaceShip = new Model(FileManager::RelativePath("res/models/spaceship/Wraith Raider Starship.obj"), 0.25f, 0.75f, 0.386f);
 	Model* bullet = new Model(FileManager::RelativePath("res/models/bullet/bullet.obj"), 1.0f, 0.0f, 0.121f);
-	Model* spaceShip2 = new Model(FileManager::RelativePath("res/models/enemy_spaceship/Wraith Raider Starship.obj"), 0.25f, 0.75f, 0.386f);
-	Model* ast = new Model(FileManager::RelativePath("res/models/asteroida/Asteroid.obj"), 0.11f, 0.129f, 0.49f, 1.0f);
+	//Model* spaceShip2 = new Model(FileManager::RelativePath("res/models/enemy_spaceship/Wraith Raider Starship.obj"), 0.25f, 0.75f, 0.386f);
+	Model* spaceShip2 = new Model(FileManager::RelativePath("res/models/enemyShip2/Trident-A10.obj"), 0.25f, 0.75f, 0.386f);
+	Model* ast = new Model(FileManager::RelativePath("res/models/asteroida/Asteroid.obj"), 0.11f, 0.129f, 0.49f, 0.4f);
 	Model* healthPowerUp = new Model(FileManager::RelativePath("res/models/powerups/health/health.obj"), 0.11f, 0.129f, 0.49f);
 	Model* doubleShotsPowerUp = new Model(FileManager::RelativePath("res/models/powerups/doubleShooting/doubleShots.obj"), 0.11f, 0.129f, 0.49f);
 	Model* moonModel = new Model(FileManager::RelativePath("res/models/moon/moon.obj"), 0.11f, 0.129f, 0.49f);
@@ -205,9 +208,9 @@ int main()
 	ship->transform.Rotate(75.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 
 	ship2->transform.setPosition(50, 0, 0);
-	ship2->transform.Scale(glm::vec3(0.005f, 0.005f, 0.005f));
-	ship2->transform.Rotate(-90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	ship2->transform.Rotate(-75.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+	ship2->transform.Scale(glm::vec3(0.002f, 0.002f, 0.002f));
+	ship2->transform.Rotate(-180.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	ship2->transform.Rotate(-75.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 	ship2->Active(false);
 
 	asteroid->transform.setPosition(0, 0, 0);
@@ -248,59 +251,15 @@ int main()
 	gameManager.SetHealthPowerUp(health);
 	gameManager.SetDoubleShotsPowerUp(doubleShots);
 
-	unsigned int depthMapFBO;
-	glGenFramebuffers(1, &depthMapFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-
-	const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
-
-
-	glGenTextures(1, &globals::depthMap);
-	glBindTexture(GL_TEXTURE_2D, globals::depthMap);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-		SHADOW_WIDTH, SHADOW_WIDTH, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, globals::depthMap, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	//glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		return false;
-
+	
+	Framebuffer dirLightShadowsFramebuffer(2048, 2048);
+	dirLightShadowsFramebuffer.GenerateTexture2D();
+	dirLightShadowsFramebuffer.InitFramebuffer();
+	
+	Framebuffer pointLightShadowsFramebuffer(1024, 1024);
+	pointLightShadowsFramebuffer.GenerateCubemapTexture();
+	pointLightShadowsFramebuffer.InitFramebuffer();
 	///////////////////////////////////////////////
-	const unsigned int CUBEMAP_SHADOW_WIDTH = 384, CUBEMAP_SHADOW_HEIGHT = 384;
-	unsigned int depthCubemap;
-	glGenTextures(1, &depthCubemap);
-	unsigned int depthCubemapFBO;
-	glGenFramebuffers(1, &depthCubemapFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
-
-	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
-	for (unsigned int i = 0; i < 6; ++i)
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT,
-			CUBEMAP_SHADOW_WIDTH, CUBEMAP_SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-	//glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		return false;
-	///////////////////////////////////////////////
-	glm::mat4 view(1);
-	glm::mat4 projection(1);
 
 	Skybox skybox(globals::faces);
 	skyBoxShader->use();
@@ -317,6 +276,10 @@ int main()
 		GLfloat currentFrame = (float)glfwGetTime();
 		globals::deltaTime = currentFrame - globals::lastFrame;
 		globals::lastFrame = currentFrame;
+		if(globals::deltaTime > 0.5f)
+		{
+			globals::deltaTime = 1 / 120; // 120hz
+		}
 		// input
 		// -----
 		IOManager::processInput(window);
@@ -385,7 +348,7 @@ int main()
 
 
 
-		float aspect = (float)CUBEMAP_SHADOW_WIDTH / (float)CUBEMAP_SHADOW_HEIGHT;
+		float aspect = (float)pointLightShadowsFramebuffer.GetWidth() / (float)pointLightShadowsFramebuffer.GetHeight();
 		float near_plan = 5.0f, far_plan = 100.0f;
 		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near_plan, far_plan);
 
@@ -408,8 +371,8 @@ int main()
 		//directional light shadow map drawing
 		depthShader->use();
 		depthShader->setMat4("lightSpaceMatrix", globals::lightSpaceMatrix);
-		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+		glViewport(0, 0, dirLightShadowsFramebuffer.GetWidth(), dirLightShadowsFramebuffer.GetHeight());
+		glBindFramebuffer(GL_FRAMEBUFFER, dirLightShadowsFramebuffer.GetFramebufferID());
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glCullFace(GL_FRONT);
 		root->SetShader(depthShader.get());
@@ -418,8 +381,8 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		//point light shadow map drawing
-		glViewport(0, 0, CUBEMAP_SHADOW_WIDTH, CUBEMAP_SHADOW_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, depthCubemapFBO);
+		glViewport(0, 0, pointLightShadowsFramebuffer.GetWidth() ,pointLightShadowsFramebuffer.GetHeight());
+		glBindFramebuffer(GL_FRAMEBUFFER, pointLightShadowsFramebuffer.GetFramebufferID());
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		cubemapDepthShader->use();
 		root->SetShader(cubemapDepthShader.get());
@@ -441,15 +404,18 @@ int main()
 		ourShader->setMat4("projection", projection);
 		ourShader->setMat4("LightSpaceMatrix", globals::lightSpaceMatrix);
 		ourShader->setFloat("far_plane", far_plan);
+		
+		glActiveTexture(GL_TEXTURE0 + 1);
 		ourShader->setInt("shadowMap", 1);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, globals::depthMap);
-		ourShader->setInt("skybox", 3);
-		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, dirLightShadowsFramebuffer.GetFramebufferTextureID());
+
+		glActiveTexture(GL_TEXTURE0 + 8);
+		ourShader->setInt("skybox", 8);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skybox.getTextureID());
+
+		glActiveTexture(GL_TEXTURE0 + 2);
 		ourShader->setInt("depthCubemap", 2);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, pointLightShadowsFramebuffer.GetFramebufferTextureID());
 
 		setPBRShader(ourShader.get());
 

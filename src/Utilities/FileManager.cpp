@@ -1,13 +1,24 @@
 #include <FileManager.h>
-#include <filesystem>
+#include <iostream>
 
-using Path = std::experimental::filesystem::path;
-namespace fs = std::experimental::filesystem;
+
+Path FileManager::PATH = InitPath();
+Path FileManager::InitPath()
+{
+	Path currentPath = fs::current_path();
+	Path srcPath;
+	for( auto& it : currentPath)
+	{
+		srcPath /= it;
+		if (it == "src")
+			break;
+	}
+	return srcPath;
+}
 
 std::string FileManager::RelativePath(char const *relativePath)
 {
-	Path path = fs::current_path();
-	//std::string path = 
+	Path path = PATH;
 	path /= relativePath;
 	return path.string();
 }
