@@ -14,12 +14,10 @@ namespace globals {
 
 	bool isWireframeModeActive = false;
 
-	glm::vec3 lightDiffuse(0.5f, 0.4f, 0.8f);
 	glm::vec3 lightSpecular(1.0f, 1.0f, 1.0f);
 	glm::vec3 spotLightDirection(0.5f, 0.02f, -0.34f);
 	glm::vec3 spotLightDirection1(-0.89f, -0.792f, -1.683f);
-	bool spotLightEnabled = true, spotLightEnabled1 = true, pointLightEnabled = true;
-	glm::vec3 lightPosition(0);
+	bool spotLightEnabled = true, spotLightEnabled1 = true;
 	glm::vec3 spotLightPosition(0);
 	glm::vec3 spotLightPosition1(0);
 

@@ -17,12 +17,10 @@ namespace globals{
 
 	extern bool isWireframeModeActive;
 
-	extern glm::vec3 lightDiffuse;
 	extern glm::vec3 lightSpecular;
 	extern glm::vec3 spotLightDirection;
 	extern glm::vec3 spotLightDirection1;
-	extern bool spotLightEnabled, spotLightEnabled1, pointLightEnabled;
-	extern glm::vec3 lightPosition;
+	extern bool spotLightEnabled, spotLightEnabled1;
 	extern glm::vec3 spotLightPosition;
 	extern glm::vec3 spotLightPosition1;
 
