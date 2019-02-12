@@ -15,6 +15,6 @@ public:
 	void Scale(glm::vec3 scale);
 	void setPosition(float x, float y, float z);
 	glm::vec3 getPosition();
-	glm::mat4 GetTransform();
+	float* getPositionAddress(int);
 };
 #endif

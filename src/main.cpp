@@ -12,7 +12,6 @@
 #include <Shader.h>
 #include <Model.h>
 #include <GraphNode.h>
-#include <Mesh.h>
 #include <Camera.h>
 #include <GameManager.h>
 #include <TextRenderer.h>
@@ -22,6 +21,7 @@
 #include <IOManager.h>
 #include <FileManager.h>
 #include <Framebuffer.h>
+#include <DirLight.h>
 
 #include <iostream>
 #include <cstdlib>
@@ -265,7 +265,8 @@ int main()
 	skyBoxShader->use();
 	skyBoxShader->setInt("skybox", 0);
 
-
+	DirLight* dirLight = new DirLight(glm::vec3(-5.16f, 1.05f, 8.082f), glm::vec3(1.0f, 1.0f, 1.0f), 0.2f, ourShader.get());
+	root->AddChild(dirLight);
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
@@ -273,9 +274,10 @@ int main()
 
 
 		glfwGetWindowSize(window, &globals::SCR_WIDTH, &globals::SCR_HEIGHT);
-		GLfloat currentFrame = (float)glfwGetTime();
-		globals::deltaTime = currentFrame - globals::lastFrame;
-		globals::lastFrame = currentFrame;
+		GLfloat currentFrame = float(glfwGetTime());
+		static GLfloat lastFrame;
+		globals::deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
 		if(globals::deltaTime > 0.5f)
 		{
 			globals::deltaTime = 1 / 120; // 120hz
@@ -288,23 +290,24 @@ int main()
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
+		//cout << dirLight->transform.getPosition().x << " " << dirLight->transform.getPosition().y << " " << dirLight->transform.getPosition().z << endl;
 		ImGui::NewFrame();
 		{
 			ImGui::Begin("Settings");
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			ImGui::ColorEdit3("Ambient Light", (float*)&globals::lightAmbient); // Edit 3 floats representing a color
+			ImGui::ColorEdit3("Dir Light Color", (float*)dirLight->GetColorAddress()); // Edit 3 floats representing a color
 			ImGui::ColorEdit3("Diffuse Light", (float*)&globals::lightDiffuse);
 			ImGui::ColorEdit3("Specular Light", (float*)&globals::lightSpecular);
 			ImGui::Text("DirLight light direction");
-			ImGui::SliderFloat("x-direction", &globals::lightDirection.x, -10.0f, 10.0f);
-			ImGui::SliderFloat("y-direction", &globals::lightDirection.y, -10.0f, 10.0f);
-			ImGui::SliderFloat("z-direction", &globals::lightDirection.z, -10.0f, 10.0f);
-			ImGui::SliderFloat("dirLightStrenght", &globals::dirLightStrenght, 0.0f, 1.0f);
+			ImGui::SliderFloat("x-direction", dirLight->transform.getPositionAddress(0), -10.0f, 10.0f);
+			ImGui::SliderFloat("y-direction", dirLight->transform.getPositionAddress(1), -10.0f, 10.0f);
+			ImGui::SliderFloat("z-direction", dirLight->transform.getPositionAddress(2), -10.0f, 10.0f);
+			ImGui::SliderFloat("dirLightStrength", dirLight->GetStrengthAddress(), 0.0f, 1.0f);
 			ImGui::Checkbox("glPolygonMode", &globals::isWireframeModeActive);
 			ImGui::Checkbox("pointLight", &globals::pointLightEnabled);
 			ImGui::Checkbox("spotlight1", &globals::spotLightEnabled);
 			ImGui::Checkbox("spotLight2", &globals::spotLightEnabled1);
-			ImGui::Checkbox("dirLight", &globals::dirLightEnabled);
+			ImGui::Checkbox("dirLight", dirLight->GetActiveAddress());
 			if (ImGui::Button("ActivatePlygonMode"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
 			{
 				globals::isWireframeModeActive = !globals::isWireframeModeActive;
@@ -319,7 +322,6 @@ int main()
 			}
 			ImGui::End();
 		}
-
 		root->transform.Rotate(-1.0f * globals::deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
 
 		moon->transform.Rotate(-3.0f * globals::deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -330,20 +332,11 @@ int main()
 		glm::mat4 projection = glm::perspective(glm::radians(globals::camera->Zoom), (float)globals::SCR_WIDTH / (float)globals::SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = globals::camera->GetViewMatrix();
 
-		glm::mat4 DirLightPosition(1);
-		DirLightPosition[3][0] = globals::lightDirection.x;
-		DirLightPosition[3][1] = globals::lightDirection.y;
-		DirLightPosition[3][2] = globals::lightDirection.z;
-		DirLightPosition = graph->worldTransform.TransformMatrix() * DirLightPosition;
-		globals::WorldLightDirection.x = DirLightPosition[3][0];
-		globals::WorldLightDirection.y = DirLightPosition[3][1];
-		globals::WorldLightDirection.z = DirLightPosition[3][2];
-
 		glm::mat4 lightProjection(1), lightView(1);
 
 		float near_plane = -10.0f, far_plane = 100.0f;
 		lightProjection = glm::ortho(-100.0f, 100.0f, -80.0f, 80.0f, near_plane, far_plane);
-		lightView = glm::lookAt(globals::WorldLightDirection, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+		lightView = glm::lookAt(dirLight->worldTransform.getPosition(), glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
 		globals::lightSpaceMatrix = lightProjection * lightView;
 
 
@@ -355,17 +348,17 @@ int main()
 		globals::lightPosition = lightB->worldTransform.getPosition();
 		std::vector<glm::mat4> shadowTransforms;
 		shadowTransforms.push_back(shadowProj *
-			glm::lookAt(globals::lightPosition, globals::lightPosition + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+			glm::lookAt(lightB->worldTransform.getPosition(), lightB->worldTransform.getPosition() + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
 		shadowTransforms.push_back(shadowProj *
-			glm::lookAt(globals::lightPosition, globals::lightPosition + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+			glm::lookAt(lightB->worldTransform.getPosition(), lightB->worldTransform.getPosition() + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
 		shadowTransforms.push_back(shadowProj *
-			glm::lookAt(globals::lightPosition, globals::lightPosition + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
+			glm::lookAt(lightB->worldTransform.getPosition(), lightB->worldTransform.getPosition() + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
 		shadowTransforms.push_back(shadowProj *
-			glm::lookAt(globals::lightPosition, globals::lightPosition + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
+			glm::lookAt(lightB->worldTransform.getPosition(), lightB->worldTransform.getPosition() + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
 		shadowTransforms.push_back(shadowProj *
-			glm::lookAt(globals::lightPosition, globals::lightPosition + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
+			glm::lookAt(lightB->worldTransform.getPosition(), lightB->worldTransform.getPosition() + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
 		shadowTransforms.push_back(shadowProj *
-			glm::lookAt(globals::lightPosition, globals::lightPosition + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
+			glm::lookAt(lightB->worldTransform.getPosition(), lightB->worldTransform.getPosition() + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
 
 
 		//directional light shadow map drawing
@@ -388,7 +381,7 @@ int main()
 		root->SetShader(cubemapDepthShader.get());
 		for (unsigned int i = 0; i < 6; ++i)
 			cubemapDepthShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
-		cubemapDepthShader->setVec3("lightPos", globals::lightPosition);
+		cubemapDepthShader->setVec3("lightPos", lightB->worldTransform.getPosition());
 		cubemapDepthShader->setFloat("far_plane", far_plan);
 		// 1. wygeneruj map� g��boko�ci
 		root->Draw();
@@ -441,7 +434,8 @@ int main()
 		gameManager.enterPushed(globals::enterPushed);
 		gameManager.GameOps();
 
-		root->Update(globals::deltaTime * 5);
+
+		root->Update();
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
@@ -471,17 +465,13 @@ void setPBRShader(Shader *shader) {
 	shader->setVec3("pointLight.position", globals::lightPosition);
 	shader->setBool("pointLight.enabled", globals::pointLightEnabled);
 
-	shader->setVec3("dirLight.direction", globals::WorldLightDirection);
-	shader->setVec3("dirLight.color", globals::lightAmbient);
-	shader->setFloat("dirLight.lightStrength", globals::dirLightStrenght);
-	shader->setBool("dirLight.enabled", globals::dirLightEnabled);
-
 	shader->setVec3("spotLight[0].position", globals::spotLightPosition);
 	shader->setVec3("spotLight[0].direction", globals::spotLightDirection);
 	shader->setFloat("spotLight[0].cutOff", glm::cos(glm::radians(8.0f)));
 	shader->setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(16.0f)));
 	shader->setVec3("spotLight[0].color", 0.0f, 1.0f, 0.1f);
 	shader->setBool("spotLight[0].enabled", globals::spotLightEnabled);
+
 	shader->setVec3("spotLight[1].position", globals::spotLightPosition1);
 	shader->setVec3("spotLight[1].direction", globals::spotLightDirection1);
 	shader->setFloat("spotLight[1].cutOff", glm::cos(glm::radians(12.0f)));

@@ -9,7 +9,6 @@ namespace globals{
 	extern int SCR_HEIGHT;
 
 	extern GLfloat deltaTime; // Czas pomi�dzy obecn� i poprzedni� klatk�  
-	extern GLfloat lastFrame; // Czas ostatniej ramki
 	extern bool firstMouse;
 
 	extern Camera* camera;
@@ -18,18 +17,14 @@ namespace globals{
 
 	extern bool isWireframeModeActive;
 
-	extern glm::vec3 lightAmbient;
 	extern glm::vec3 lightDiffuse;
 	extern glm::vec3 lightSpecular;
-	extern glm::vec3 lightDirection;
 	extern glm::vec3 spotLightDirection;
 	extern glm::vec3 spotLightDirection1;
-	extern float dirLightStrenght;
-	extern bool dirLightEnabled, spotLightEnabled, spotLightEnabled1, pointLightEnabled;
+	extern bool spotLightEnabled, spotLightEnabled1, pointLightEnabled;
 	extern glm::vec3 lightPosition;
 	extern glm::vec3 spotLightPosition;
 	extern glm::vec3 spotLightPosition1;
-	extern glm::vec3 WorldLightDirection;
 
 	extern glm::mat4 lightSpaceMatrix;
 	extern unsigned int depthMap;

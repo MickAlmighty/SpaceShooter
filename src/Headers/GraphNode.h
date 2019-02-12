@@ -26,14 +26,14 @@ public:
 
 	GraphNode(Model* m = nullptr, glm::vec2 _min = glm::vec2(0), glm::vec2 _max = glm::vec2(0));
 	GraphNode(GraphNode* graphNode);
-	~GraphNode(void);
+	virtual ~GraphNode(void);
 
 	void AddChild(GraphNode* node);
 	void RemoveNode(GraphNode* node);
 	void Active(bool state);
 	bool Active();
 
-	virtual void Update(float msec);
+	virtual void Update();
 	virtual void Draw();
 	
 	Model* GetModel();

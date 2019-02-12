@@ -48,7 +48,7 @@ void GraphNode::RemoveNode(GraphNode* node)
 		children.erase(i);
 }
 
-void GraphNode::Update(float msec)
+void GraphNode::Update()
 {
 	if (parent)
 	{
@@ -64,7 +64,7 @@ void GraphNode::Update(float msec)
 	}
 	for (GraphNode* node : children)
 	{
-		if (node) node->Update(msec);
+		if (node) node->Update();
 	}
 }
 

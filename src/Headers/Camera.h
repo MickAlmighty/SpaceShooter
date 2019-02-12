@@ -61,7 +61,8 @@ public:
         updateCameraVectors();
     }
 
-    // Returns the view matrix calculated using Euler Angles and the LookAt Matrix
+	virtual ~Camera() = default;
+	// Returns the view matrix calculated using Euler Angles and the LookAt Matrix
     glm::mat4 GetViewMatrix()
     {
         return glm::lookAt(Position, glm::vec3(0,0,0), Up);
@@ -129,14 +130,14 @@ private:
         Up    = glm::normalize(glm::cross(Right, Front));
     }
 
-	virtual void Update(float msec)
+	virtual void Update()
 	{
 		//cout << "Update w kamerze" << endl;
 		if (parent)
 		{
 			bool dirtySum = parent->GetDirtyFlag() | dirty;
 			if (dirtySum) {
-				worldTransform.TransformMatrix(parent->worldTransform.TransformMatrix() * transform.GetTransform());
+				worldTransform.TransformMatrix(parent->worldTransform.TransformMatrix() * transform.TransformMatrix());
 				Position.x = worldTransform.TransformMatrix()[3][0];
 				Position.y = worldTransform.TransformMatrix()[3][1];
 				Position.z = worldTransform.TransformMatrix()[3][2];
@@ -151,7 +152,7 @@ private:
 		}
 		for (GraphNode* node : children)
 		{
-			if (node) node->Update(msec);
+			if (node) node->Update();
 		}
 	}
 };

@@ -1,5 +1,6 @@
 #include <Transform.h>
 #include <glm/gtc/matrix_transform.hpp>
+
 Transform::Transform() {
 	transform = glm::mat4(1);
 }
@@ -35,4 +36,7 @@ glm::vec3 Transform::getPosition()
 	return position;
 }
 
-glm::mat4 Transform::GetTransform() { return transform; }
+float * Transform::getPositionAddress(int i)
+{
+	return &transform[3][i];
+}
