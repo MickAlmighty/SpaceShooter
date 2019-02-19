@@ -151,6 +151,10 @@ int main()
 		FileManager::RelativePath("res/shaders/cubemapDepth.vert").c_str(),
 		FileManager::RelativePath("res/shaders/cubemapDepth.frag").c_str(),
 		FileManager::RelativePath("res/shaders/cubemapDepth.gs").c_str());
+	
+	shared_ptr<Shader> screenBufferShader = std::make_shared<Shader>(
+		FileManager::RelativePath("res/shaders/screenbuffer.vert").c_str(),
+		FileManager::RelativePath("res/shaders/screenbuffer.frag").c_str());
 
 	Model* lightBox = new Model(FileManager::RelativePath("res/models/lightBox/LightBox.fbx"));
 	Model* spaceShip = new Model(FileManager::RelativePath("res/models/spaceship/Wraith Raider Starship.obj"), 0.25f, 0.75f, 0.386f);
@@ -257,6 +261,14 @@ int main()
 	Framebuffer pointLightShadowsFramebuffer(1024, 1024);
 	pointLightShadowsFramebuffer.GenerateCubemapTexture();
 	pointLightShadowsFramebuffer.InitFramebuffer();
+
+	
+	unsigned int framebuffer;
+	glGenFramebuffers(1, &framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	// create a color attachment texture
+	
+	
 	///////////////////////////////////////////////
 
 	Skybox skybox(globals::faces);
@@ -267,6 +279,18 @@ int main()
 	root->AddChild(dirLight);
 	// render loop
 	// -----------
+	// screen quad VAO
+	unsigned int quadVAO, quadVBO;
+	glGenVertexArrays(1, &quadVAO);
+	glGenBuffers(1, &quadVBO);
+	glBindVertexArray(quadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 24, &globals::quadVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	
 	while (!glfwWindowShouldClose(window))
 	{
 
@@ -280,15 +304,12 @@ int main()
 		{
 			globals::deltaTime = 1 / 120; // 120hz
 		}
-
-		
-
-
 		// input
 		// -----
 		IOManager::processInput(window);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -367,7 +388,6 @@ int main()
 		shadowTransforms.push_back(shadowProj *
 			glm::lookAt(lightB->worldTransform.getPosition(), lightB->worldTransform.getPosition() + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
 
-
 		//directional light shadow map drawing
 		depthShader->use();
 		depthShader->setMat4("lightSpaceMatrix", globals::lightSpaceMatrix);
@@ -392,12 +412,23 @@ int main()
 		cubemapDepthShader->setFloat("far_plane", far_plan);
 		// 1. wygeneruj map� g��boko�ci
 		root->Draw();
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		// 2. normalnie wyrenderuj scen� korzystaj�c z mapy g��boko�ci (cubemap)
-
+		
 		glViewport(0, 0, globals::SCR_WIDTH, globals::SCR_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+		unsigned int textureColorbuffer;
+		glGenTextures(1, &textureColorbuffer);
+		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, globals::SCR_WIDTH, globals::SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+		unsigned int rbo;
+		glGenRenderbuffers(1, &rbo);
+		glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, globals::SCR_WIDTH, globals::SCR_HEIGHT); // use a single renderbuffer object for both a depth AND stencil buffer.
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+		
 		root->SetShader(ourShader.get());
 		ourShader->use();
 		ourShader->setMat4("view", view);
@@ -417,15 +448,18 @@ int main()
 		ourShader->setInt("depthCubemap", 2);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, pointLightShadowsFramebuffer.GetFramebufferTextureID());
 
-		setPBRShader(ourShader.get());
-
-		root->Draw();
+		
 		
 		skyBoxShader->use();
 		view = glm::mat4(glm::mat3(globals::camera->GetViewMatrix())); // remove translation from the view matrix
 		skyBoxShader->setMat4("view", view);
 		skyBoxShader->setMat4("projection", projection);
 		skybox.DrawSkybox();
+		
+		setPBRShader(ourShader.get());
+		root->Draw();
+		
+		
 		/*debugDepthQuad->use();
 		debugDepthQuad->setFloat("near_plane", near_plane);
 		debugDepthQuad->setFloat("far_plane", far_plane);
@@ -433,19 +467,31 @@ int main()
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
 		renderQuad();*/
+		
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDisable(GL_DEPTH_TEST);
+		// 2. normalnie wyrenderuj scen� korzystaj�c z mapy g��boko�ci (cubemap)
+
+		glViewport(0, 0, globals::SCR_WIDTH, globals::SCR_HEIGHT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		screenBufferShader->use();
+		glBindVertexArray(quadVAO);
+		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);	// use the color attachment texture as the texture of the quad plane
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
 		gameManager.SetFrameTime(globals::deltaTime);
 		gameManager.spacebarPushed(globals::spacebarPushed);
 		gameManager.enterPushed(globals::enterPushed);
 		gameManager.GameOps();
-
 		root->Update();
-
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
+		glDeleteRenderbuffers(1, &rbo);
+		glDeleteTextures(1, &textureColorbuffer);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -453,7 +499,7 @@ int main()
 	//delete instantiateShader;
 	root->~GraphNode();
 
-
+	
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();

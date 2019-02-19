@@ -39,4 +39,15 @@ namespace globals {
 		FileManager::RelativePath("res/cubemaps/galaxy/skybox4Z+.png"),
 		FileManager::RelativePath("res/cubemaps/galaxy/skybox4Z-.png")
 	};
+
+	float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+		// positions   // texCoords
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		-1.0f, -1.0f,  0.0f, 0.0f,
+		 1.0f, -1.0f,  1.0f, 0.0f,
+
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		 1.0f, -1.0f,  1.0f, 0.0f,
+		 1.0f,  1.0f,  1.0f, 1.0f
+	};
 }

@@ -34,5 +34,6 @@ namespace globals{
 
 
 	extern vector<std::string> faces;
+	extern float quadVertices[];
 }
 #endif
